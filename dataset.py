@@ -10,59 +10,51 @@ import pickle
 
 
 class CustomDataset(Dataset):
-    def __init__(self, data_dir: str, train_mode, transforms, img_size=512):
+    def __init__(self, data_dir, train_mode, img_size, transforms):
         super().__init__()
         self.train_mode = train_mode
         self.transforms = transforms
 
-        if self.train_mode == "Train":
-            self.img_list = glob(
-                os.path.join(data_dir, f"train_input_img_{img_size}/*.pickle")
-            )
-            self.label_list = glob(
-                os.path.join(data_dir, f"train_label_img_{img_size}/*.pickle")
-            )
-
+        if self.train_mode=='Train':
+            self.img_list = glob(os.path.join(data_dir, f'train_input_img_{img_size}/*.pickle'))
+            self.label_list = glob(os.path.join(data_dir, f'train_label_img_{img_size}/*.pickle'))
+            
             self.img_list.sort()
             self.label_list.sort()
-        elif self.train_mode == "Val":
-            self.img_list = glob(
-                os.path.join(data_dir, f"val_input_img_{img_size}/*.pickle")
-            )
-            self.label_list = glob(
-                os.path.join(data_dir, f"val_label_img_{img_size}/*.pickle")
-            )
-
+        elif self.train_mode=='Val':
+            self.img_list = glob(os.path.join(data_dir, f'val_input_img_{img_size}/*.pickle'))
+            self.label_list = glob(os.path.join(data_dir, f'val_label_img_{img_size}/*.pickle'))
+            
             self.img_list.sort()
             self.label_list.sort()
         else:
-            self.img_list = glob(os.path.join(data_dir, "test_input_img/*.*"))
-
+            self.img_list = glob(os.path.join(data_dir, 'test_input_img/*.*'))
+    
     def load_pickle(self, path):
         with open(path, "rb") as handle:
             data = pickle.load(handle)
         return data
-
+  
     def __getitem__(self, index):
         img_path = self.img_list[index]
-        img_file_name = img_path.split("/")[-1]
+        img_file_name = img_path.split('/')[-1]
         image = self.load_pickle(img_path)
         image = image.astype(np.float32)
-
-        if self.train_mode != "Test":
+        
+        if self.train_mode!='Test':
             label_path = self.label_list[index]
-            label_file_name = label_path.split("/")[-1]
+            label_file_name = label_path.split('/')[-1]
             label = self.load_pickle(label_path)
             label = label.astype(np.float32)
             transformed = self.transforms(image=image, label=label)
-            image = transformed["image"]
-            label = transformed["label"]
+            image = transformed['image']
+            label = transformed['label']
             return image, label
         else:
             transformed = self.transforms(image=image)
             image = transformed["image"]
             return image, img_file_name
-
+    
     def __len__(self):
         return len(self.img_list)
 

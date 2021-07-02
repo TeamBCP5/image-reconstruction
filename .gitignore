@@ -2,6 +2,9 @@
 download.sh
 sketches/**
 saved_models/**
+patch_inputs/**
+patch_labels/**
+*.pth
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
