@@ -41,6 +41,7 @@ class MixerBlock(nn.Module):
         x = x + self.channel_mix(x)  # token_dim => channel_dim with skip connection
         return x
 
+
 class MLPMixer(nn.Module):
     def __init__(
         self,
@@ -87,7 +88,8 @@ class MLPMixer(nn.Module):
         output = self.projection(output) # [B, HXW, IN_CHANNELS]
         output = output.view(batch_size, self.num_patch_oneway, self.num_patch_oneway, self.in_channels)
         output = self.spread(output)
-        output += input # broadcasting
+        # output += input # broadcasting addition
+        output *= input # broadcasting multiplication
         return output
 
     def spread(self, output: torch.Tensor):
@@ -96,6 +98,64 @@ class MLPMixer(nn.Module):
         output = torch.repeat_interleave(output, self.patch_size, dim=2)
         output = output.permute(0, 3, 1, 2) # [B, C, H, W]
         return output
+
+        
+
+# class MLPMixer(nn.Module):
+#     def __init__(
+#         self,
+#         in_channels: int,
+#         hidden_dim: int,
+#         patch_size: int,
+#         image_size: int,
+#         num_blocks: int,
+#         token_dim:int,
+#         channel_dim: int
+#         ):
+#         super().__init__()
+#         assert (
+#             image_size % patch_size == 0
+#         ), "Image dimensions must be divisible by the patch size."
+#         self.patch_size = patch_size
+#         self.num_patch_oneway = (image_size // patch_size)
+#         self.num_patch = self.num_patch_oneway ** 2
+#         self.in_channels = in_channels
+#         self.patch_embedding = nn.Sequential(
+#             nn.Conv2d(
+#                 in_channels=in_channels,
+#                 out_channels=hidden_dim,
+#                 kernel_size=patch_size,
+#                 stride=patch_size,
+#             ),
+#             Rearrange("b c h w -> b (h w) c"),
+#         )
+#         self.mixer_blocks = nn.ModuleList(
+#             [
+#                 MixerBlock(hidden_dim, self.num_patch, token_dim, channel_dim)
+#                 for _ in range(num_blocks)
+#             ]
+#         )
+#         self.layer_norm = nn.LayerNorm(hidden_dim)
+#         self.projection = nn.Linear(hidden_dim, in_channels)
+
+#     def forward(self, input): # [B, in_channels, H, W]
+#         batch_size = input.size(0)
+#         output = self.patch_embedding(input) # [B, HXW, HIDDEN]
+#         for mixer in self.mixer_blocks: 
+#             output = mixer(output) # [B, HXW, HIDDEN]
+#         output = self.layer_norm(output)
+#         output = self.projection(output) # [B, HXW, IN_CHANNELS]
+#         output = output.view(batch_size, self.num_patch_oneway, self.num_patch_oneway, self.in_channels)
+#         output = self.spread(output)
+#         output += input # broadcasting
+#         return output
+
+#     def spread(self, output: torch.Tensor):
+#         assert output.ndim == 4
+#         output = torch.repeat_interleave(output, self.patch_size, dim=1)
+#         output = torch.repeat_interleave(output, self.patch_size, dim=2)
+#         output = output.permute(0, 3, 1, 2) # [B, C, H, W]
+#         return output
     
         
 

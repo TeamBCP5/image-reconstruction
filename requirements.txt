@@ -6,3 +6,4 @@ torchvision==0.9.1+cu111
 torchaudio==0.8.1
 torchtext==0.9.1
 black==21.6b0
+einops==0.3.0

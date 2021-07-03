@@ -1,5 +1,6 @@
 import argparse
 from glob import glob
+import time
 import pandas as pd
 import cv2
 import albumentations as A
@@ -23,33 +24,31 @@ from torchvision.models import vgg16
 from mlp_mixer import MLPMixer
 from utils import seed_everything
 from augmentations import get_train_transform, get_valid_transform
-from dataset import CustomDataset
+from dataset import CustomDataset, train_valid_split
 from train_utils import cut_img, EarlyStopping
 from validation import validate
+import wandb
+
+def initialize_wandb(args, project='LightScatteringReduction', name='valid_type1', entity='smbly', network='MLPMixer'):
+    wandb.init(project=project, name=name, entity=entity)
+    config = wandb.config
+    config.img_size = args.img_size
+    config.lr = args.lr
+    config.batch_size = args.train_batch_size
+    config.network = network
 
 
 def train(args):
+    initialize_wandb(args)
     seed_everything(41)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    train_csv = pd.read_csv(os.path.join(args.data_dir, "train.csv"))
+    train_input_paths, train_label_paths, valid_input_paths, valid_label_paths = \
+        train_valid_split(args.data_dir, './configs/train_meta.csv', valid_type=1, full_train=False)
 
-    train_all_input_files = train_csv["input_img"].apply(
-        lambda x: os.path.join(args.data_dir, "train_input_img", x)
-    )
-    train_all_label_files = train_csv["label_img"].apply(
-        lambda x: os.path.join(args.data_dir, "train_label_img", x)
-    )
-
-    train_input_files = train_all_input_files.tolist()[60:]
-    train_label_files = train_all_label_files.tolist()[60:]
-
-    valid_input_files = train_all_input_files.tolist()[:60]
-    valid_label_files = train_all_label_files.tolist()[:60]
-
-    # cut_img(train_input_files, os.path.join(args.data_dir, 'train_input_img_'), img_size=args.img_size, stride=args.stride)
-    # cut_img(train_label_files, os.path.join(args.data_dir, 'train_label_img_'), img_size=args.img_size, stride=args.stride)
-    # cut_img(valid_input_files, os.path.join(args.data_dir, 'val_input_img_'), img_size=args.img_size, stride=args.stride)
-    # cut_img(valid_label_files, os.path.join(args.data_dir, 'val_label_img_'), img_size=args.img_size, stride=args.stride)
+    cut_img(train_input_paths, os.path.join(args.data_dir, 'train_input_img_'), img_size=args.img_size, stride=args.stride)
+    cut_img(train_label_paths, os.path.join(args.data_dir, 'train_label_img_'), img_size=args.img_size, stride=args.stride)
+    cut_img(valid_input_paths, os.path.join(args.data_dir, 'val_input_img_'), img_size=args.img_size, stride=args.stride)
+    cut_img(valid_label_paths, os.path.join(args.data_dir, 'val_label_img_'), img_size=args.img_size, stride=args.stride)
 
     train_transform = get_train_transform()
     valid_transform = get_valid_transform()
@@ -68,12 +67,13 @@ def train(args):
         channel_dim=4096,
     )
     model.to(device)
+    wandb.watch(model)
 
     num_params = sum([p.numel() for p in model.parameters()])
     print("Number of Params\n", num_params)
 
     criterion = nn.L1Loss().to(device)
-    early_stop = EarlyStopping(path=args.ckpt_path)
+    # early_stop = EarlyStopping(path=args.ckpt_path)
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
 
     total_steps = len(train_loader) * args.epochs
@@ -82,13 +82,12 @@ def train(args):
         max_lr=args.lr, 
         total_steps=total_steps,
         pct_start=0.1,
-        # steps_per_epoch=10, 
-        # epochs=10,
         anneal_strategy='linear'
         )
 
     best_score = 0
     for epoch in range(args.epochs):
+        time_check = time.time()
         model.train()
         train_loss = []
         for step, (img, label) in enumerate(tqdm(train_loader)):
@@ -101,22 +100,42 @@ def train(args):
             optimizer.step()
             scheduler.step()
 
+            if isinstance(scheduler.get_last_lr(), list):
+                wandb.log({'lr': scheduler.get_last_lr()[0]})
+            else:
+                wandb.log({'lr': scheduler.get_last_lr()})
+
             train_loss.append(loss.item())
 
+        min_per_epoch = (time.time() - time_check) / 60 # MPE
+        sec_per_batch = (time.time() - time_check) / len(train_loader) # SPB
+
+        time_check = time.time()
         valid_score, _, _ = validate(
             model,
-            valid_input_files,
-            valid_label_files,
+            valid_input_paths,
+            valid_label_paths,
             stride=args.stride,
             img_size=args.img_size,
             transforms=valid_transform,
             device=device,
         )
+        sec_per_inference = (time.time() - time_check) / len(valid_input_paths)
+
         print(f'[Epoch: {epoch+1}/{args.epochs}] Valid PSNR: {valid_score: .3f} Train Loss: {np.mean(train_loss): .3f}')
+        wandb.log(dict(
+            epoch=epoch, 
+            valid_psnr=valid_score, 
+            train_loss=np.mean(train_loss),
+            minutes_per_epoch=min_per_epoch, # MPE
+            seconds_per_batch=sec_per_batch, # SPB
+            seconds_per_inference=sec_per_inference # SPI
+            ))
+        
         if best_score < valid_score:
             torch.save(model.state_dict(), f'best_mlpmixer.pth')
             best_score = valid_score
-
+            print(f'Best model saved: # Epoch {epoch+1}')
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -131,3 +150,4 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     train(args)
+    

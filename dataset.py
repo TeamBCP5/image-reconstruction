@@ -1,12 +1,50 @@
 import os
+from glob import glob
+from typing import List, Tuple
+import pickle
 import cv2
 from PIL import Image
-from glob import glob
 import numpy as np
+import pandas as pd
 import torch
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
-import pickle
+
+
+def train_valid_split(data_dir: str='/content/', meta_path: str='train_meta.csv', valid_type: int=1, full_train: bool=False) -> Tuple[List[str]]:
+    """
+    Example:
+        train_input_paths, train_label_paths, valid_input_paths, valid_label_paths = \
+            train_valid_split(data_dir='/content/', meta_path='train_meta.csv', valid_type=1, full_train=True)
+    Args:
+        data_dir (str): 학습 데이터 디렉토리 경로
+        meta_path (str): 메타파일 경로. Defaults to 'train_meta.csv'.
+        valid_type (int):
+            - 1: 스프레드시트를 통해 결정한 validation set
+            - 0: 기존 validation set(10000~10059 이미지로 검증)
+        full_train (bool):
+            - True: valid_type에 관계 없이 모든 데이터를 학습에 활용
+    Returns:
+        Tuple[List[str]]: [학습IMG경로], [학습GT경로], [검증IMG경로], [검증GT경로]
+    """
+    assert os.path.isfile(meta_path), f"'{meta_path}' not found"
+    assert os.path.isdir(data_dir), f"'{data_dir}' is not a directory"
+    meta = pd.read_csv(meta_path)
+
+    # align data path
+    meta['input_img'] = meta['input_img'].apply(lambda x: os.path.join(data_dir, 'train_input_img', x))
+    meta['label_img'] = meta['label_img'].apply(lambda x: os.path.join(data_dir, 'train_label_img', x))
+
+    # split train & valid
+    if full_train:
+        train_input_paths = meta['input_img'].tolist()
+        train_label_paths = meta['label_img'].tolist()
+    else:
+        train_input_paths = meta[meta[f'valid_type{valid_type}']=='train']['input_img'].tolist()
+        train_label_paths = meta[meta[f'valid_type{valid_type}']=='train']['label_img'].tolist()
+    valid_input_paths = meta[meta[f'valid_type{valid_type}']=='valid']['input_img'].tolist()
+    valid_label_paths = meta[meta[f'valid_type{valid_type}']=='valid']['label_img'].tolist()
+    return train_input_paths, train_label_paths, valid_input_paths, valid_label_paths
 
 
 class CustomDataset(Dataset):
@@ -41,7 +79,7 @@ class CustomDataset(Dataset):
         image = self.load_pickle(img_path)
         image = image.astype(np.float32)
         
-        if self.train_mode!='Test':
+        if self.train_mode != 'Test':
             label_path = self.label_list[index]
             label_file_name = label_path.split('/')[-1]
             label = self.load_pickle(label_path)
