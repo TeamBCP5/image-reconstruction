@@ -22,7 +22,7 @@ def get_train_transform():
             ),
             ToTensorV2(p=1.0),
         ],
-        additional_targets={"image": "image", "label": "image"},
+        additional_targets={"source": "image", "label": "image"},
     )
 
 
@@ -38,5 +38,5 @@ def get_valid_transform():
             ),
             ToTensorV2(p=1.0),
         ],
-        additional_targets={"image": "image", "label": "image"},
+        additional_targets={"source": "image", "label": "image"},
     )

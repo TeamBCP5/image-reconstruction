@@ -23,6 +23,19 @@ def seed_everything(seed: int = 41):
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = True
 
+def print_gpu_status() -> None:
+    """GPU 이용 상태를 출력"""
+    total_mem = round(torch.cuda.get_device_properties(0).total_memory / 1024 ** 3, 3)
+    reserved = round(torch.cuda.memory_reserved(0) / 1024 ** 3, 3)
+    allocated = round(torch.cuda.memory_allocated(0) / 1024 ** 3, 3)
+    free = round(reserved - allocated, 3)
+    print(
+        "[+] GPU Status\n",
+        f"Total: {total_mem} GB\n",
+        f"Reserved: {reserved} GB\n",
+        f"Allocated: {allocated} GB\n",
+        f"Residue: {free} GB\n",
+    )
 
 def load_pickle(path: str):
     with open(path, "rb") as pkl_file:

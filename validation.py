@@ -5,7 +5,6 @@ import torch
 from torch import nn
 import segmentation_models_pytorch as smp
 from metrics import psnr_score
-from train_utils import cut_img
 from dataset import CustomDataset
 from augmentations import get_valid_transform
 
@@ -31,6 +30,31 @@ def get_stats(image_array: np.array, prefix: str='input'): # NOTE. image_array: 
     return stat_dict
 
 def validate(
+    model,
+    valid_dataloader,
+    device=None,
+): 
+    model.eval()
+    results = []
+    score = []
+    for batch in tqdm(valid_dataloader):
+        images = batch['image']
+        labels = batch['label'].to(device)
+
+        with torch.no_grad():
+            preds = model(images.to(device))
+
+        pred = pred[0].cpu().clone().detach().numpy()
+        pred = pred.transpose(1, 2, 0) # [H, W, C]
+        pred = (pred * 127.5) + 127.5
+
+        result_img = pred.astype(np.uint8)
+        results.append(result_img)
+        score.append(psnr_score(result_img.astype(float), label.astype(float), 255))
+    return np.mean(score), input_stats, label_stats
+
+
+def _validate(
     model,
     img_paths,
     label_paths,

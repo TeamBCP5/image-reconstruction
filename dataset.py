@@ -47,6 +47,45 @@ def train_valid_split(data_dir: str='/content/', meta_path: str='train_meta.csv'
     return train_input_paths, train_label_paths, valid_input_paths, valid_label_paths
 
 
+class ShiftedDataset(Dataset):
+    def __init__(self, source_dir, label_dir, transforms=None):
+        self.sources = sorted(glob(os.path.join(source_dir, '*.png')))
+        self.labels = sorted(glob(os.path.join(label_dir, '*.png')))
+        assert len(self.sources) == len(self.labels)
+        self.transforms = transforms
+
+    def __getitem__(self, idx, channel_order='rgb'):
+        src = cv2.imread(self.sources[idx])
+        lbl = cv2.imread(self.labels[idx])
+        assert src.shape == lbl.shape
+        if channel_order == 'rgb':
+            src = cv2.cvtColor(src, cv2.COLOR_BGR2RGB)
+            lbl = cv2.cvtColor(lbl, cv2.COLOR_BGR2RGB)
+        outputs = self.transforms(image=src, label=lbl)
+        return outputs
+
+    def __len__(self):
+        return len(self.sources)
+
+class EvalShiftedDataset(Dataset):
+    def __init__(self, source_dir, transforms):
+        self.sources = sorted(glob(os.path.join(source_dir, '*.png')))
+        self.transforms = transforms
+
+    def __getitem__(self, idx, channel_order='rgb'):
+        img_name = os.path.basename(self.sources[idx])
+        prefix =  img_name.split('_')[0] # 'test' or 'train'
+        suffix = img_name.split('_')[-1].split('.')[0] # 10001(0,0), ...
+        src = cv2.imread(self.sources[idx])
+        if channel_order == 'rgb':
+            src = cv2.cvtColor(src, cv2.COLOR_BGR2RGB)
+        outputs = self.transforms(img_id=f'{prefix}_{suffix}.png', image=src)
+        return outputs
+
+    def __len__(self):
+        return len(self.sources)
+
+
 class CustomDataset(Dataset):
     def __init__(self, data_dir, train_mode, img_size, transforms):
         super().__init__()
