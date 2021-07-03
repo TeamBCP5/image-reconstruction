@@ -36,22 +36,25 @@ def validate(
 ): 
     model.eval()
     results = []
-    score = []
-    for batch in tqdm(valid_dataloader):
+    for batch in tqdm(valid_dataloader, desc='[Valid]'):
+        img_ids = batch['img_id']
         images = batch['image']
-        labels = batch['label'].to(device)
+        labels = batch['label'].detach().numpy()
 
         with torch.no_grad():
             preds = model(images.to(device))
 
-        pred = pred[0].cpu().clone().detach().numpy()
-        pred = pred.transpose(1, 2, 0) # [H, W, C]
-        pred = (pred * 127.5) + 127.5
+        preds = preds.cpu().clone().detach().numpy()
+        preds = preds.transpose(0, 2, 3, 1) # [H, W, C]
+        preds = (preds * 127.5) + 127.5
+        preds = preds.astype(np.uint8)
 
-        result_img = pred.astype(np.uint8)
-        results.append(result_img)
-        score.append(psnr_score(result_img.astype(float), label.astype(float), 255))
-    return np.mean(score), input_stats, label_stats
+        batch_psnr = psnr_score(preds.astype(float), labels.astype(float), 255)
+        results.append(batch_psnr)
+    
+    psnr_each_sample = {img_id: s for img_id, s in zip(img_ids, batch_psnr)}
+    valid_avg_psnr = np.concatenate(results).mean()
+    return valid_avg_psnr, psnr_each_sample
 
 
 def _validate(

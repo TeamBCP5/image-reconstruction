@@ -21,7 +21,9 @@ def train_valid_split(data_dir: str='/content/', meta_path: str='train_meta.csv'
         meta_path (str): 메타파일 경로. Defaults to 'train_meta.csv'.
         valid_type (int):
             - 1: 스프레드시트를 통해 결정한 validation set
-            - 0: 기존 validation set(10000~10059 이미지로 검증)
+            - 2: 기존 validation set(10000~10059 이미지로 검증)
+            - 3: 스프레드시트를 통해 결정한 validation set & 노이즈 판정된 이미지 제거
+            
         full_train (bool):
             - True: valid_type에 관계 없이 모든 데이터를 학습에 활용
     Returns:
@@ -47,8 +49,8 @@ def train_valid_split(data_dir: str='/content/', meta_path: str='train_meta.csv'
     return train_input_paths, train_label_paths, valid_input_paths, valid_label_paths
 
 
-class ShiftedDataset(Dataset):
-    def __init__(self, source_dir, label_dir, transforms=None):
+class TrainShiftedDataset(Dataset):
+    def __init__(self, source_dir, label_dir, transforms):
         self.sources = sorted(glob(os.path.join(source_dir, '*.png')))
         self.labels = sorted(glob(os.path.join(label_dir, '*.png')))
         assert len(self.sources) == len(self.labels)
@@ -62,6 +64,28 @@ class ShiftedDataset(Dataset):
             src = cv2.cvtColor(src, cv2.COLOR_BGR2RGB)
             lbl = cv2.cvtColor(lbl, cv2.COLOR_BGR2RGB)
         outputs = self.transforms(image=src, label=lbl)
+        return outputs
+
+    def __len__(self):
+        return len(self.sources)
+
+class ValidShiftedDataset(Dataset):
+    def __init__(self, source_dir, label_dir, transforms):
+        self.sources = sorted(glob(os.path.join(source_dir, '*.png')))
+        self.labels = sorted(glob(os.path.join(label_dir, '*.png')))
+        assert len(self.sources) == len(self.labels)
+        self.transforms = transforms
+
+    def __getitem__(self, idx, channel_order='rgb'):
+        src = cv2.imread(self.sources[idx])
+        src_img_id = os.path.basename(self.sources[idx])
+        lbl = cv2.imread(self.labels[idx])
+        assert src.shape == lbl.shape
+        if channel_order == 'rgb':
+            src = cv2.cvtColor(src, cv2.COLOR_BGR2RGB)
+            lbl = cv2.cvtColor(lbl, cv2.COLOR_BGR2RGB)
+        outputs = self.transforms(img_id=src_img_id, image=src)
+        outputs['label'] = lbl # NOTE. no transform for label
         return outputs
 
     def __len__(self):

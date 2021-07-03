@@ -22,7 +22,7 @@ import segmentation_models_pytorch as smp
 from mlp_mixer import MLPMixer
 from utils import seed_everything, print_gpu_status
 from augmentations import get_train_transform, get_valid_transform
-from dataset import train_valid_split, ShiftedDataset
+from dataset import train_valid_split, TrainShiftedDataset, ValidShiftedDataset
 from validation import validate
 from preprocessing import get_save_shifted_images
 import wandb
@@ -52,27 +52,27 @@ def train(args):
         valid_input_paths,
         valid_label_paths,
     ) = train_valid_split(
-        args.data_dir, "./configs/train_meta.csv", valid_type=1, full_train=False
+        args.data_dir, "./configs/train_meta.csv", valid_type=1, full_train=True
     )
 
     train_input_dir = os.path.join(args.data_dir, "train_shifted_inputs")
     train_label_dir = os.path.join(args.data_dir, "train_shifted_labels")
     valid_input_dir = os.path.join(args.data_dir, "valid_shifted_inputs")
     valid_label_dir = os.path.join(args.data_dir, "valid_shifted_labels")
-    # get_save_shifted_images(train_input_paths[:2], save_dir=train_input_dir)
-    # get_save_shifted_images(train_label_paths[:2], save_dir=train_label_dir)
-    # get_save_shifted_images(valid_input_paths[:2], save_dir=valid_input_dir)
-    # get_save_shifted_images(valid_label_paths[:2], save_dir=valid_label_dir)
+    get_save_shifted_images(train_input_paths, save_dir=train_input_dir)
+    get_save_shifted_images(train_label_paths, save_dir=train_label_dir)
+    get_save_shifted_images(valid_input_paths, save_dir=valid_input_dir)
+    get_save_shifted_images(valid_label_paths, save_dir=valid_label_dir)
 
     train_transform = get_train_transform()
     valid_transform = get_valid_transform()
 
-    train_dataset = ShiftedDataset(
+    train_dataset = TrainShiftedDataset(
         source_dir=train_input_dir,
         label_dir=train_label_dir,
         transforms=train_transform,
     )
-    valid_dataset = ShiftedDataset(
+    valid_dataset = ValidShiftedDataset(
         source_dir=valid_input_dir,
         label_dir=valid_label_dir,
         transforms=valid_transform,
@@ -132,10 +132,10 @@ def train(args):
         train_loss = []
 
         for batch in tqdm(train_loader, desc="[Train]"):
-            images = batch["image"].to(device)
+            images = batch["image"]
             labels = batch["label"].to(device)
 
-            preds = model(images)
+            preds = model(images.to(device))
             loss = criterion(preds, labels)
 
             optimizer.zero_grad()
@@ -154,17 +154,12 @@ def train(args):
         sec_per_batch = (time.time() - time_check) / len(train_loader)  # SPB
 
         time_check = time.time()
-        valid_score = validate(
+        valid_score, valid_psnr_each_sample = validate(
             model,
-            valid_input_paths,
-            valid_label_paths,
-            stride=args.stride,
-            img_size=args.img_size,
-            transforms=valid_transform,
+            valid_dataloader=valid_loader,
             device=device,
         )
         sec_per_inference = (time.time() - time_check) / len(valid_input_paths)
-
         print(
             f"[Epoch: {epoch+1}/{args.epochs}] Valid PSNR: {valid_score: .3f} Train Loss: {np.mean(train_loss): .3f}"
         )
@@ -178,9 +173,11 @@ def train(args):
                 seconds_per_inference=sec_per_inference,  # SPI
             )
         )
+        # wandb.log(valid_psnr_each_sample) # TODO: 단일 이미지별 PSNR
 
         if best_score < valid_score:
-            torch.save(model.state_dict(), f"best_mlpmixer.pth")
+            ckpt = {'model': model.state_dict(), 'scheduler': scheduler.state_dict(), 'optimier': optimizer.state_dict()}
+            torch.save(ckpt, f"best_shifted_unet.pth")
             best_score = valid_score
             print(f"Best model saved: # Epoch {epoch+1}")
 
@@ -188,11 +185,11 @@ def train(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--data-dir", default="/content/data/")
-    parser.add_argument("--epochs", default=1)
+    parser.add_argument("--epochs", default=40)
     parser.add_argument("--lr", default=1e-3)
     parser.add_argument("--train-batch-size", default=8)
     parser.add_argument("--valid-batch-size", default=32)
-    parser.add_argument("--ckpt-path", default="./saved/ckpt.pth")
+    parser.add_argument("--ckpt-path", default="./saved/unet-ckpt.pth")
 
     args = parser.parse_args()
     train(args)
