@@ -31,6 +31,7 @@ def train_valid_split(data_dir: str='/content/', meta_path: str='train_meta.csv'
     """
     assert os.path.isfile(meta_path), f"'{meta_path}' not found"
     assert os.path.isdir(data_dir), f"'{data_dir}' is not a directory"
+    print(f'Train/Valid Type: {valid_type}')
     meta = pd.read_csv(meta_path)
 
     # align data path
@@ -39,11 +40,12 @@ def train_valid_split(data_dir: str='/content/', meta_path: str='train_meta.csv'
 
     # split train & valid
     if full_train:
-        train_input_paths = meta['input_img'].tolist()
-        train_label_paths = meta['label_img'].tolist()
+        train_input_paths = meta[meta[f'valid_type{valid_type}']!='except']['input_img'].tolist()
+        train_input_paths = meta[meta[f'valid_type{valid_type}']!='except']['label_img'].tolist()
     else:
         train_input_paths = meta[meta[f'valid_type{valid_type}']=='train']['input_img'].tolist()
         train_label_paths = meta[meta[f'valid_type{valid_type}']=='train']['label_img'].tolist()
+        
     valid_input_paths = meta[meta[f'valid_type{valid_type}']=='valid']['input_img'].tolist()
     valid_label_paths = meta[meta[f'valid_type{valid_type}']=='valid']['label_img'].tolist()
     return train_input_paths, train_label_paths, valid_input_paths, valid_label_paths
