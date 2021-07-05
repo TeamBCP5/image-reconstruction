@@ -1,15 +1,18 @@
 import os
 import cv2
+import random
 import numpy as np
 from tqdm import tqdm
 from typing import List
 from utils import save_pickle
-
+ 
 LARGE = 3264
 SMALL = 1632
 
-def get_save_shifted_images(img_path_list: List[str], save_dir: str):
+def get_save_shifted_images(img_path_list: List[str], save_dir: str, shuffle: bool=False, random_state: int=None):
     os.makedirs(save_dir, exist_ok=True)
+    if random_state is not None:
+        random.seed(random_state)
 
     for img_path in tqdm(img_path_list, desc='[Extract Shifted Imgs]'):
         img_name = os.path.basename(img_path)
@@ -19,15 +22,39 @@ def get_save_shifted_images(img_path_list: List[str], save_dir: str):
         img = make_img_square(img)
 
         shift_factor = 6 if img.shape[0] == LARGE else 3
-        shifts = [(i, j) for i in range(shift_factor) for j in range(shift_factor)]
 
-        for w, h in shifts:
-            tmp = img[:, w::shift_factor, :]
-            tmp = tmp[h::shift_factor, :, :]
-            save_path = os.path.join(save_dir, f'{prefix}({w},{h}).png')
-            cv2.imwrite(save_path, tmp)
+        if shuffle:
+            shifts = [[(i, j) for i in range(shift_factor) for j in range(shift_factor)] for _ in range(3)] # for each channel
+            for s in shifts:
+                random.shuffle(s)
 
-def make_img_square(img: np.array):
+            for (w0, h0), (w1, h1), (w2, h2) in zip(*shifts):
+                channel0 = img[:, w0::shift_factor, 0]
+                channel0 = channel0[h0::shift_factor, :]
+                channel0 = channel0[:, :, np.newaxis]
+
+                channel1 = img[:, w1::shift_factor, 1]
+                channel1 = channel1[h1::shift_factor, :]
+                channel1 = channel1[:, :, np.newaxis]
+
+                channel2 = img[:, w2::shift_factor, 2]
+                channel2 = channel2[h2::shift_factor, :]
+                channel2 = channel2[:, :, np.newaxis]
+
+                shifted_img = np.concatenate([channel0, channel1, channel2], axis=-1)
+                save_path = os.path.join(save_dir, f'{prefix}({w0}{w1}{w2},{h0}{h1}{h2}).png')
+                cv2.imwrite(save_path, shifted_img)
+
+        else:
+            shifts = [(i, j) for i in range(shift_factor) for j in range(shift_factor)]
+            for w, h in shifts:
+                shifted_img = shifted_img[:, w::shift_factor, :]
+                shifted_img = shifted_img[h::shift_factor, :, :]
+                save_path = os.path.join(save_dir, f'{prefix}({w},{h}).png')
+                cv2.imwrite(save_path, shifted_img)
+
+
+def make_img_square(img: np.array): # reflection pad
     h, w, _ = img.shape
 
     # padding to make image square
