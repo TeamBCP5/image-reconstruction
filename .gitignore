@@ -1,3 +1,13 @@
+# etc
+download.sh
+sketches/**
+saved_models/**
+patch_inputs/**
+patch_labels/**
+configs/**
+*.pth
+wandb/**
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
