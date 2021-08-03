@@ -1,5 +1,0 @@
-[default]
-entity = team-bcp5
-project = postprocessor
-base_url = https://api.wandb.ai
-
