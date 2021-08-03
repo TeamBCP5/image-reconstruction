@@ -1,0 +1,44 @@
+network: 
+  name: "pix2pix"
+  generator:
+    encoder_name: 'se_resnext50_32x4d'
+    encoder_weights: 'imagenet'
+    in_channels: 3
+    classes: 3
+  discriminator:
+    ndf: 64
+    n_layers_D: 4
+
+mode: 'train'
+epochs: 100
+batch_size: 10
+num_workers: 0
+seed: 41
+
+data:
+  dir: '/content/data'
+  meta: './configs/train_meta.csv'
+  valid_type: 1 # 20 images similar to test images
+  full_train: True
+  stride: 256
+  patch_size: 512
+  multiscale: False
+  denoise: False
+
+optimizer:
+  name: 'Adam'
+  lr: 2e-4
+
+scheduler:
+  name: 'ReduceLROnPlateau'
+  mode: f'max'
+  factor: 0.5
+  patience: 2
+  threshold_mode: f'abs'
+  min_lr: 1e-8
+  verbose: True
+
+checkpoint:
+  load_path: None
+  save_dir: ./checkpoints/
+

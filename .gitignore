@@ -6,7 +6,6 @@ checkpoints/**
 saved_models/**
 patch_inputs/**
 patch_labels/**
-configs/**
 *.pth
 wandb/**
 input/**

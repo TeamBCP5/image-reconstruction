@@ -1,0 +1,36 @@
+network:
+  name: "hinet"
+  depth: 4
+
+mode: 'train'
+epochs: 100
+batch_size: 1
+num_workers: 0
+seed: 41
+
+data:
+  source: 
+    config: './configs/Pix2Pix.yaml'
+    checkpoint: './checkpoints/ckpt_best_pix2pix.pth' # run inference of main model if there's no data to postprocess
+  dir: '/content/hinet_dataset'
+  meta: './configs/train_meta.csv'
+  valid_type: 1 # 20 images similar to test images
+  full_train: True
+
+optimizer:
+  name: 'Adam'
+  lr: 2e-4
+
+scheduler:
+  name: 'ReduceLROnPlateau'
+  mode: f'max'
+  factor: 0.5
+  patience: 2
+  threshold_mode: f'abs'
+  min_lr: 1e-8
+  verbose: True
+
+checkpoint:
+  load_path: None
+  save_dir: ./checkpoints/
+
