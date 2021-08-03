@@ -49,18 +49,22 @@ def remove_all_files_in_dir(dir):
 
 
 def save_samples(result, epoch, save_dir="inference_sample"):
-    sub_imgs = []
-    for i, img in enumerate(result):
-        save_path = os.path.join(save_dir, f"test_{20000+i}.png")
-        cv2.imwrite(save_path, img)
-        sub_imgs.append(save_path)
+    # sub_imgs = []
+    # for i, img in enumerate(result):
+    #     save_path = os.path.join(save_dir, f"test_{20000+i}.png")
+    #     cv2.imwrite(save_path, img)
+    #     sub_imgs.append(save_path)
 
-    save_zip_path = os.path.join(save_dir, f"sample_epoch_{epoch}.zip")
-    submission = zipfile.ZipFile(save_zip_path, "w")
-    for path in sub_imgs:
-        submission.write(path)
-    submission.close()
+    # save_zip_path = os.path.join(save_dir, f"sample_epoch_{epoch}.zip")
+    # submission = zipfile.ZipFile(save_zip_path, "w")
+    # for path in sub_imgs:
+    #     submission.write(path)
+    # submission.close()
 
+    with zipfile.ZipFile(save_dir+"/submission.zip", 'w') as img_out:
+        for i, image in enumerate(result):
+            image = cv2.imencode('.png', image)[1]
+            img_out.writestr(f"test_{20000+i}.png", image)
 
 def seed_everything(seed: int = 41):
     random.seed(seed)
