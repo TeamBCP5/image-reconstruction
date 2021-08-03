@@ -7,3 +7,6 @@ torchaudio==0.8.1
 torchtext==0.9.1
 black==21.6b0
 einops==0.3.0
+timm==0.3.2
+fastai==2.4.1
+pytorch-msssim==0.2.1
