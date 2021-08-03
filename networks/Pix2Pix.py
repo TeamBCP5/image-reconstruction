@@ -1,6 +1,6 @@
 from torch import nn
-import functools
 from torch.nn import init
+import functools
 
 
 def define_D(
@@ -107,7 +107,6 @@ def init_weights(net, init_type="normal", gain=0.02):
             init.normal_(m.weight.data, 1.0, gain)
             init.constant_(m.bias.data, 0.0)
 
-    print("initialize network with %s" % init_type)
     net.apply(init_func)
 
 

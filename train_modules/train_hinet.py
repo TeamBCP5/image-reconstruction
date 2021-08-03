@@ -1,50 +1,39 @@
 import os
-import argparse
 from tqdm import tqdm
-from glob import glob
 import numpy as np
-import pandas as pd
 import cv2
 import torch
-from torch import nn, optim
-import torch.nn.functional as F
-from torch.utils.data import DataLoader, Dataset
-from torch.optim.lr_scheduler import ReduceLROnPlateau
+from torch import nn
+from torch.utils.data import DataLoader
 from torch.cuda.amp import autocast, GradScaler
-import segmentation_models_pytorch as smp
-import wandb
-from networks.HINet import HINet
-from utils.criterions import HINetLoss
-from utils.utils import get_model, seed_everything
-from utils.metrics import psnr_score
-from data.dataset import HINetDataset, train_valid_split
-from data.augmentations import get_train_transform, get_valid_transform
-from inference_hinet import inference
-
-# temporary
-import albumentations as A
-from albumentations.pytorch.transforms import ToTensorV2
-
-def get_train_transform():
-    return A.Compose(
-        [
-            A.Resize(1224, 1632),
-            A.HorizontalFlip(p=0.5),
-            ToTensorV2(p=1.0),
-        ],
-        additional_targets={"label": "image"},
-    )
-
-def get_valid_transform():
-    return A.Compose(
-        [A.Resize(1224, 1632), ToTensorV2(p=1.0)], additional_targets={"label": "image"}
-    )
+from networks import HINet
+from utils import (
+    Flags,
+    psnr_score,
+    HINetLoss,
+    get_model,
+    get_optimizer,
+    get_scheduler,
+    set_seed,
+    print_system_envs,
+)
+from data import (
+    HINetDataset,
+    train_valid_split,
+    compose_postprocessing_dataset,
+    get_train_transform,
+    get_valid_transform,
+)
 
 
 def train(args):
-    seed_everything(args.seed)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    scaler = GradScaler()
+    print_system_envs()
+    set_seed(args.seed)
+    os.makedirs(args.checkpoint.save_dir, exist_ok=True)
+    os.makedirs(args.data.dir, exist_ok=True)
+
+    compose_postprocessing_dataset(args, device)
 
     # compose dataset
     (
@@ -52,57 +41,54 @@ def train(args):
         train_label_paths,
         valid_input_paths,
         valid_label_paths,
-    ) = train_valid_split(data_dir=args.data_dir, full_train=args.full_train)
-    
-    train_transform = get_train_transform()
-    valid_transform = get_valid_transform()
+    ) = train_valid_split(
+        args.data.dir, valid_type=args.data.valid_type, full_train=args.data.full_train
+    )
+
+    train_transform = get_train_transform(args.network.name)
+    valid_transform = get_valid_transform(args.network.name)
     train_dataset = HINetDataset(
-        train_input_paths, train_label_paths, transforms=train_transform, mode="Train"
+        train_input_paths, train_label_paths, train_transform, mode="train"
     )
     valid_dataset = HINetDataset(
-        valid_input_paths, valid_label_paths, transforms=valid_transform, mode="Valid"
+        valid_input_paths, valid_label_paths, valid_transform, mode="valid"
     )
     train_loader = DataLoader(
-        train_dataset, batch_size=args.batch_size, shuffle=True, drop_last=False
+        train_dataset,
+        batch_size=args.batch_size,
+        shuffle=True,
+        drop_last=False,
+        num_workers=args.num_workers,
     )
     valid_loader = DataLoader(
-        valid_dataset, batch_size=args.batch_size, shuffle=False, drop_last=False
+        valid_dataset,
+        batch_size=args.batch_size,
+        shuffle=False,
+        drop_last=False,
+        num_workers=args.num_workers,
     )
 
-    # for inference
-    test_input_paths = sorted(glob('/content/data/hinet_dataset/test_input_img/*'))
-    test_dataset = HINetDataset(test_input_paths, transforms=valid_transform, mode='Test')
-    test_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False, drop_last=False)
-
-    # define model
-    model = get_model(model_type="hinet")
+    # compose train components
+    model = get_model(args)
     model.to(device)
-    wandb.watch(model)
-
-    # define optimizer & scheduler
-    optimizer = optim.Adam(model.parameters(), lr=args.lr)
-    scheduler = ReduceLROnPlateau(
-        optimizer,
-        mode="max",
-        factor=0.5,
-        patience=2,
-        threshold_mode="abs",
-        min_lr=1e-8,
-        verbose=True,
-    )
-
-    # define criterion
+    optimizer = get_optimizer(args, model)
+    scheduler = get_scheduler(args, optimizer)
     criterion = HINetLoss().to(device)
 
     start_epoch = 0
-    if args.ckpt_load_path is not None:
-        ckpt = torch.load(args.ckpt_load_path)
-        start_epoch = ckpt["epoch"]
+    if args.checkpoint.load_path is not None:
+        ckpt = torch.load(args.checkpoint.load_path)
+        start_epoch = ckpt["epoch"] + 1
         model.load_state_dict(ckpt["model"])
         optimizer.load_state_dict(ckpt["optimizer"])
         scheduler.load_state_dict(ckpt["scheduler"])
-        print(f"Checkpoint loaded. Epoch: {start_epoch}")
+        print(
+            f"[+] Checkpoint\n",
+            f"'{args.checkpoint.load_path}' loaded\n",
+            f"Resume from epoch {start_epoch}\n",
+        )
 
+    scaler = GradScaler()
     best_score = 0
     for epoch in range(start_epoch, args.epochs):
         model.train()
@@ -127,22 +113,15 @@ def train(args):
         train_loss = sum(train_loss_list) / len(train_loss_list)
 
         print(
-            f"Epoch [{epoch}/{args.epochs}], Train loss: [{train_loss:.5f}] Valid PSNR: [{valid_psnr:.5f}] Valid PSNR(Adjusted): [{valid_psnr_adjusted:.5f}]\n"
+            f"[+] Epoch: {epoch}/{args.epochs}\n",
+            f"* Valid PSNR: {valid_psnr:.4f}\n",
+            f"* Valid PSNR(adjusted): {valid_psnr_adjusted:.4f}\n",  # clipping green channel
+            f"* Train Loss: {train_loss:.4f}\n",
         )
+
         scheduler.step(valid_psnr)
 
-        wandb.log(
-            {
-                "epoch": epoch,
-                "train_loss": train_loss,
-                "Val_PSNR": valid_psnr,
-                "Val_PSNR_adjusted": valid_psnr_adjusted,
-                
-            }
-        )
-
         if best_score < valid_psnr:
-            print(f"Best Score! Valid PSNR {valid_psnr:.5f}")
             best_score = valid_psnr
             ckpt = dict(
                 epoch=epoch,
@@ -151,23 +130,14 @@ def train(args):
                 scheduler=scheduler.state_dict(),
             )
             ckpt_save_path = os.path.join(
-                args.ckpt_save_dir, f"best_hinet.pth"
+                args.checkpoint.save_dir, f"ckpt_best_hinet.pth"
             )
             torch.save(ckpt, ckpt_save_path)
-
-        if valid_psnr >= 36.0:
-            ckpt = dict(
-                epoch=epoch,
-                model=model.state_dict(),
-                optimizer=optimizer.state_dict(),
-                scheduler=scheduler.state_dict(),
+            print(
+                f"[+] Best Score Updated!\n",
+                f"Best PSNR: {best_score: .4f}\n",
+                f"Checkpoint saved: '{ckpt_save_path}'\n",
             )
-            ckpt_save_path = os.path.join(
-                args.ckpt_save_dir, f"hinet_ep{epoch}_val({valid_psnr:.2f}).pth"
-            )
-            torch.save(ckpt, ckpt_save_path)
-            print(f"Epoch {epoch} Model saved. Valid PSNR: {valid_psnr:.5f}")
-            inference(model, epoch, test_loader, device, args.inference_save_dir)
 
 
 def validation(model, valid_loader, device):
@@ -214,33 +184,3 @@ def validation(model, valid_loader, device):
     valid_psnr_adjusted = sum(psnr_adjusted_list) / len(psnr_adjusted_list)  # average
 
     return valid_psnr, valid_psnr_adjusted
-
-
-if __name__ == "__main__":
-    import wandb
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--project", default="postprocessor")
-    parser.add_argument("--exp-name", default="HINet & Immature Pix2Pix Dataset")
-    parser.add_argument("--network", default="hinet")
-    parser.add_argument("--data-dir", default="/content/data/hinet_dataset")
-    parser.add_argument("--test-data-dir", default="/content/data/hinet_dataset")
-    parser.add_argument("--inference-save-dir", default="./inference/")
-    parser.add_argument("--full-train", default=True)
-    parser.add_argument("--epochs", default=100)
-    parser.add_argument("--batch-size", default=1)
-    parser.add_argument("--lr", default=25e-6)
-    parser.add_argument("--ckpt-load-path", default="./checkpoints/hinet_ep3_val(34.22).pth")
-    parser.add_argument("--ckpt-save-dir", default="./checkpoints/")
-    parser.add_argument("--seed", default=41)
-    args = parser.parse_args()
-
-    print("=" * 50)
-    print(args)
-    print("=" * 50)
-
-    run = wandb.init(project=args.project, name=args.exp_name)
-    wandb.config.update(args)
-    train(args)
-    run.finish()
-    

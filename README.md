@@ -1,1 +1,0 @@
-# DACON Light Scattering Reduction

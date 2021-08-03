@@ -1,6 +1,8 @@
 # etc
 download.sh
 sketches/**
+submission/**
+checkpoints/**
 saved_models/**
 patch_inputs/**
 patch_labels/**
@@ -138,3 +140,4 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+

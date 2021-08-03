@@ -9,32 +9,30 @@ from utils import remove_all_files_in_dir
 
 def cut_img(
     img_path_list: List[str],
-    save_path: str,
+    save_dir: str,
     stride: int = 256,
-    split_size: int = 512,
-    train_multiscale_mode: bool = False,
-    denoise_method: str = None,  # 'naive', 'selective'
+    patch_size: int = 512,
+    multiscale: bool = False,
+    denoise: str = False,
     remove_exist: bool = True,
 ):
-    save_dir = f"{save_path}_{split_size}"
+    save_dir = f"{save_dir}_{patch_size}"
     os.makedirs(save_dir, exist_ok=True)
     if remove_exist:
         remove_all_files_in_dir(save_dir)
 
     num = 0
-    for path in tqdm(img_path_list, desc="[Cut Images]"):
+    for path in tqdm(img_path_list, desc="[Cut & Save Images]"):
         for size_idx in range(2):
             img = cv2.imread(path)
 
             # denoise
-            if denoise_method == "naive":
-                img = apply_naive_denoise(img)
-            elif denoise_method == "selective":
+            if denoise:
                 img = apply_denoise(img)
 
             top_size, left_size = img.shape[0], img.shape[1]
             if size_idx == 1:
-                if train_multiscale_mode is False:
+                if multiscale is False:
                     break
                 top_size, left_size = int(top_size / 2), int(left_size / 2)
                 img = cv2.resize(
@@ -44,12 +42,12 @@ def cut_img(
             for top in range(0, img.shape[0], stride):
                 for left in range(0, img.shape[1], stride):
                     if (
-                        top + split_size > img.shape[0]
-                        or left + split_size > img.shape[1]
+                        top + patch_size > img.shape[0]
+                        or left + patch_size > img.shape[1]
                     ):
                         continue
-                    piece = np.zeros((split_size, split_size, 3), dtype=np.uint8)
-                    temp = img[top : top + split_size, left : left + split_size, :]
+                    piece = np.zeros((patch_size, patch_size, 3), dtype=np.uint8)
+                    temp = img[top : top + patch_size, left : left + patch_size, :]
                     piece[: temp.shape[0], : temp.shape[1], :] = temp
 
                     # save png
@@ -59,12 +57,12 @@ def cut_img(
 
             # 가장 자리 1
             for left in range(0, img.shape[1], stride):
-                if left + split_size > img.shape[1]:
+                if left + patch_size > img.shape[1]:
                     continue
-                piece = np.zeros((split_size, split_size, 3), np.uint8)
+                piece = np.zeros((patch_size, patch_size, 3), np.uint8)
                 temp = img[
-                    img.shape[0] - split_size : img.shape[0],
-                    left : left + split_size,
+                    img.shape[0] - patch_size : img.shape[0],
+                    left : left + patch_size,
                     :,
                 ]
                 piece[: temp.shape[0], : temp.shape[1], :] = temp
@@ -76,11 +74,11 @@ def cut_img(
 
             # 가장 자리 2
             for top in range(0, img.shape[0], stride):
-                if top + split_size > img.shape[0]:
+                if top + patch_size > img.shape[0]:
                     continue
-                piece = np.zeros([split_size, split_size, 3], np.uint8)
+                piece = np.zeros([patch_size, patch_size, 3], np.uint8)
                 temp = img[
-                    top : top + split_size, img.shape[1] - split_size : img.shape[1], :
+                    top : top + patch_size, img.shape[1] - patch_size : img.shape[1], :
                 ]
                 piece[: temp.shape[0], : temp.shape[1], :] = temp
 
@@ -90,10 +88,10 @@ def cut_img(
                 num += 1
 
             # 오른쪽 아래
-            piece = np.zeros([split_size, split_size, 3], np.uint8)
+            piece = np.zeros([patch_size, patch_size, 3], np.uint8)
             temp = img[
-                img.shape[0] - split_size : img.shape[0],
-                img.shape[1] - split_size : img.shape[1],
+                img.shape[0] - patch_size : img.shape[0],
+                img.shape[1] - patch_size : img.shape[1],
                 :,
             ]
             piece[: temp.shape[0], : temp.shape[1], :] = temp
