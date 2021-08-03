@@ -1,6 +1,5 @@
 from tqdm import tqdm
 import numpy as np
-import albumentations as A
 import torch
 import cv2
 from torch.utils.data import DataLoader, Dataset
@@ -9,7 +8,7 @@ import torch.nn.functional as F
 import argparse
 import glob
 
-from utils import seed_everything, remove_all_files_in_dir, save_samples, get_model
+from utils import save_samples, get_model
 from data import get_valid_transform, EvalDataset
 
 
@@ -25,35 +24,34 @@ def predict(main_model, post_model, device, img_paths, transforms, arg):
 
     pbar = tqdm(img_paths, total=len(img_paths), position=0, leave=True)
     for img_path in pbar:
-        dataset = EvalDataset(img_path, size=size, stride=stride, transforms=transforms)
-        loader = DataLoader(dataset, batch_size=batch_size, shuffle=False)
-        preds = torch.zeros(3, dataset.shape[0], dataset.shape[1]).to(device)
-        votes = torch.zeros(3, dataset.shape[0], dataset.shape[1]).to(device)
-
-        for images, (x1, x2, y1, y2) in loader:
+        ds = EvalDataset(img_path, size=size, stride=stride, transforms=transforms)
+        dl = DataLoader(ds, 
+                        batch_size=batch_size, 
+                        shuffle=False)
+        preds = torch.zeros(3, ds.shape[0], ds.shape[1]).to(device)
+        votes = torch.zeros(3, ds.shape[0], ds.shape[1]).to(device)
+        
+        for images, (x1, x2, y1, y2) in dl:
             with autocast():
                 pred = main_model(images.to(device).float())
-            pred = (pred * 0.5) + 0.5
+            pred = ((pred*0.5) + 0.5)
             for i in range(len(x1)):
-                preds[:, x1[i] : x2[i], y1[i] : y2[i]] = pred[i]
-                votes[:, x1[i] : x2[i], y1[i] : y2[i]] += 1
-
+                preds[:, x1[i]:x2[i], y1[i]:y2[i]] += pred[i]
+                votes[:, x1[i]:x2[i], y1[i]:y2[i]] += 1
         preds /= votes
-        preds = F.interpolate(
-            preds.unsqueeze(0), size=(1224, 1632), mode="bilinear", align_corners=False
-        )
+        preds = F.interpolate(preds.unsqueeze(0), size=(1224, 1632), mode='bilinear', align_corners=False)
         with autocast():
             post_preds = post_model(preds)
-        post_preds = F.interpolate(
-            post_preds[-1], size=(2448, 3264), mode="bicubic", align_corners=False
-        )
+        post_preds = F.interpolate(post_preds[-1], size=(2448, 3264), mode='bicubic', align_corners=False)
         post_preds = torch.clamp(post_preds, 0, 1) * 255
 
-        result_image = post_preds[0].cpu().detach().numpy()
-        result_image = result_image.transpose(1, 2, 0).astype(np.uint8)
-        result_image = cv2.cvtColor(result_image, cv2.COLOR_RGB2BGR)
+        result_img = post_preds[0].cpu().detach().numpy()
+        result_img = result_img.transpose(1,2,0)
+        result_img = result_img.astype(np.uint8)
+        result_img = cv2.cvtColor(result_img, cv2.COLOR_RGB2BGR)
 
-        results.append(result_image)
+        results.append(result_img)
+
     return results
 
 
