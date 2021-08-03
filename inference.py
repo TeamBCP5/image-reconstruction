@@ -18,12 +18,18 @@ def predict(args):
 
     # load model
     main_model = get_model(Flags(args.cfg_main).get(), mode="test")
-    main_model.load_state_dict(torch.load(args.ckpt_main)["G_model"])
+    try:
+        main_model.load_state_dict(torch.load(args.ckpt_main)["G_model"])
+    except:
+        main_model.load_state_dict(torch.load(args.ckpt_main))
     main_model.to(device)
     main_model.eval()
 
     post_model = get_model(Flags(args.cfg_post).get(), mode="test")
-    post_model.load_state_dict(torch.load(args.ckpt_post)["model"])
+    try:
+        post_model.load_state_dict(torch.load(args.ckpt_post)["model"])
+    except:
+        post_model.load_state_dict(torch.load(args.ckpt_post))
     post_model.to(device)
     post_model.eval()
 
@@ -50,7 +56,8 @@ def predict(args):
             for images, (x1, x2, y1, y2) in dl:
                 with autocast():
                     pred = main_model(images.to(device).float())
-                pred = (pred * 0.5) + 0.5
+                    pred = torch.tanh(pred)
+                    pred = (pred * 0.5) + 0.5
                 for i in range(len(x1)):
                     preds[:, x1[i] : x2[i], y1[i] : y2[i]] += pred[i]
                     votes[:, x1[i] : x2[i], y1[i] : y2[i]] += 1
@@ -98,19 +105,19 @@ if __name__ == "__main__":
     parser.add_argument(
         "--checkpoint_main",
         dest="ckpt_main",
-        default="./checkpoints/ckpt_best_pix2pix.pth",
+        default="./checkpoints/pix2pix/pix2pix.pth",
         help="학습한 main 모델 경로",
     )
     parser.add_argument(
         "--checkpoint_post",
         dest="ckpt_post",
-        default="./checkpoints/ckpt_best_hinet.pth",
+        default="./checkpoints/hinet/hinet.pth",
         help="학습한 postprocessing 모델 경로",
     )
     parser.add_argument(
         "--image_dir",
         dest="img_dir",
-        default="/content/data/test_input_img",
+        default="./content/data/test_input_img",
         help="추론 시 활용할 데이터 경로",
     )
     parser.add_argument("--patch_size", default=512, type=int, help="추론 시 사용될 윈도우의 크기")
