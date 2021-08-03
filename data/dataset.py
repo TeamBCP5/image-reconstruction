@@ -1,9 +1,13 @@
 import os
 from typing import Tuple, List
 import pandas as pd
+import numpy as np
 import cv2
 from torch.utils.data import Dataset
 import albumentations as A
+import rasterio
+from rasterio.windows import Window
+from utils.utils import make_grid
 
 VALIDTYPE_DESC = {
     "valid_type1": "Valid:\n  - Test 이미지와 유사한 20장\n Train:\n  - Valid 이미지 제외\n",
@@ -227,3 +231,22 @@ class HINetDataset(Dataset):
 
     def __len__(self):
         return len(self.input_paths)
+
+
+class EvalDataset(Dataset):
+    def __init__(self, img_path, size=512, stride=256, transforms=None):
+        self.data = rasterio.open(img_path, num_threads="all_cpus")
+        self.shape = self.data.shape
+        self.slices = make_grid(self.shape, window=size, stride=stride)
+        self.transforms = transforms
+
+    def __len__(self):
+        return len(self.slices)
+
+    def __getitem__(self, index):
+        x1, x2, y1, y2 = self.slices[index]
+        image = self.data.read([1, 2, 3], window=Window.from_slices((x1, x2), (y1, y2)))
+        image = np.moveaxis(image, 0, -1)
+        image = self.transforms(image=image)["image"]
+
+        return image, (x1, x2, y1, y2)

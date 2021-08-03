@@ -1,4 +1,6 @@
 from torch import nn
+import functools
+from torch.nn import init
 
 
 def define_D(
