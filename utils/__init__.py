@@ -6,6 +6,7 @@ from .utils import (
     print_gpu_status,
     load_pickle,
     save_pickle,
+    make_grid
 )
 from .criterions import HINetLoss, GANLoss
 from .metrics import psnr_score, ssim_score

@@ -1,374 +1,113 @@
-import os
-import zipfile
 from tqdm import tqdm
 import numpy as np
-import cv2
-import albumentations as A
-from albumentations.pytorch.transforms import ToTensorV2
-from torch.optim.lr_scheduler import ReduceLROnPlateau
 import torch
-from torch import optim, nn
+import cv2
 from torch.utils.data import DataLoader, Dataset
-import wandb
+from torch.cuda.amp import autocast
+import torch.nn.functional as F
+import argparse
+import glob
 
-from utils import seed_everything, remove_all_files_in_dir, save_samples
-from metrics import psnr_score
-from dataset import train_valid_split, train_valid_unseen_split, ImageDataset
-from preprocessing import cut_img
-from model_utils import *
+from utils import save_samples, get_model
+from data import get_valid_transform, EvalDataset
 
 
-def inference(model, img_paths: list, stride: int=256, transforms=None, device=None, batch=128):
+def predict(main_model, post_model, device, img_paths, transforms, arg):
+    main_model.eval()
+    post_model.eval()
+
+    size = arg.size
+    stride = arg.stride
+    batch_size = arg.batch_size
+
     results = []
-    img_paths = [
-        "/content/data/test_input_img/test_input_20003.png",
-        "/content/data/test_input_img/test_input_20004.png",
-        "/content/data/test_input_img/test_input_20005.png",
-        "/content/data/test_input_img/test_input_20006.png",
-        "/content/data/test_input_img/test_input_20009.png",
-        "/content/data/test_input_img/test_input_20015.png",
-        "/content/data/test_input_img/test_input_20016.png",
-    ]
-    for img_path in tqdm(img_paths, desc="[Inference]"):
-        batch_count = 0
-        img = cv2.imread(img_path)
-        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        input_img = img.copy()
 
-        img = transforms(image=img)["image"]
+    pbar = tqdm(img_paths, total=len(img_paths), position=0, leave=True)
+    for img_path in pbar:
+        ds = EvalDataset(img_path, size=size, stride=stride, transforms=transforms)
+        dl = DataLoader(ds, 
+                        batch_size=batch_size, 
+                        shuffle=False)
+        preds = torch.zeros(3, ds.shape[0], ds.shape[1]).to(device)
+        votes = torch.zeros(3, ds.shape[0], ds.shape[1]).to(device)
+        
+        for images, (x1, x2, y1, y2) in dl:
+            with autocast():
+                pred = main_model(images.to(device).float())
+            pred = ((pred*0.5) + 0.5)
+            for i in range(len(x1)):
+                preds[:, x1[i]:x2[i], y1[i]:y2[i]] += pred[i]
+                votes[:, x1[i]:x2[i], y1[i]:y2[i]] += 1
+        preds /= votes
+        preds = F.interpolate(preds.unsqueeze(0), size=(1224, 1632), mode='bilinear', align_corners=False)
+        with autocast():
+            post_preds = post_model(preds)
+        post_preds = F.interpolate(post_preds[-1], size=(2448, 3264), mode='bicubic', align_corners=False)
+        post_preds = torch.clamp(post_preds, 0, 1) * 255
 
-        crop = []
-        position = []
-
-        result_img = np.zeros_like(img.numpy().transpose(1, 2, 0))
-        voting_mask = np.zeros_like(img.numpy().transpose(1, 2, 0))
-
-        img = img.unsqueeze(0)
-        for top in range(0, img.shape[2], stride):
-            for left in range(0, img.shape[3], stride):
-                if top + img_size > img.shape[2] or left + img_size > img.shape[3]:
-                    continue
-
-                piece = torch.zeros([1, 3, img_size, img_size])
-
-                temp = img[:, :, top : top + img_size, left : left + img_size]
-                piece[:, :, : temp.shape[2], : temp.shape[3]] = temp
-
-                with torch.no_grad():
-                    pred = model(piece.to(device))
-
-                pred = pred[0].cpu().clone().detach().numpy()
-                pred = pred.transpose(1, 2, 0)
-                pred = pred * 127.5 + 127.5
-
-                crop.append(pred)
-                position.append([top, left])
-                batch_count += 1
-
-                if batch_count == batch:
-                    crop = np.array(crop).astype(np.float32)
-                    for num, (t, l) in enumerate(position):
-                        piece = crop[num]
-                        h, w, c = result_img[
-                            t : t + img_size, l : l + img_size, :
-                        ].shape
-                        result_img[t : t + img_size, l : l + img_size, :] += piece[
-                            :h, :w, :
-                        ]
-                        voting_mask[t : t + img_size, l : l + img_size, :] += 1
-                    crop = []
-                    position = []
-                    batch_count = 0
-
-        # 가장 자리 1
-        for left in range(0, img.shape[3], stride):
-            if left + img_size > img.shape[3]:
-                continue
-            piece = torch.zeros([1, 3, img_size, img_size])
-            temp = img[
-                :, :, img.shape[2] - img_size : img.shape[2], left : left + img_size
-            ]
-            piece[:, :, : temp.shape[2], : temp.shape[3]] = temp
-
-            with torch.no_grad():
-                pred = model(piece.to(device))
-
-            pred = pred[0].cpu().clone().detach().numpy()
-            pred = pred.transpose(1, 2, 0)
-            pred = pred * 127.5 + 127.5
-
-            crop.append(pred)
-            position.append([img.shape[2] - img_size, left])
-
-            batch_count += 1
-
-            if batch_count == batch:
-                crop = np.array(crop).astype(np.float32)
-                for num, (t, l) in enumerate(position):
-                    piece = crop[num]
-                    h, w, c = result_img[t : t + img_size, l : l + img_size, :].shape
-                    result_img[t : t + img_size, l : l + img_size, :] += piece[
-                        :h, :w, :
-                    ]
-                    voting_mask[t : t + img_size, l : l + img_size, :] += 1
-                crop = []
-                position = []
-                batch_count = 0
-
-        # 가장 자리 2
-        for top in range(0, img.shape[2], stride):
-            if top + img_size > img.shape[2]:
-                continue
-            piece = torch.zeros([1, 3, img_size, img_size])
-
-            temp = img[
-                :, :, top : top + img_size, img.shape[3] - img_size : img.shape[3]
-            ]
-            piece[:, :, : temp.shape[2], : temp.shape[3]] = temp
-
-            with torch.no_grad():
-                pred = model(piece.to(device))
-            pred = pred[0].cpu().clone().detach().numpy()
-            pred = pred.transpose(1, 2, 0)
-            pred = (pred * 127.5) + 127.5
-
-            crop.append(pred)
-            position.append([top, img.shape[3] - img_size])
-            batch_count += 1
-
-            if batch_count == batch:
-                crop = np.array(crop).astype(np.float32)
-                for num, (t, l) in enumerate(position):
-                    piece = crop[num]
-                    h, w, c = result_img[t : t + img_size, l : l + img_size, :].shape
-                    result_img[t : t + img_size, l : l + img_size, :] += piece[
-                        :h, :w, :
-                    ]
-                    voting_mask[t : t + img_size, l : l + img_size, :] += 1
-                crop = []
-                position = []
-                batch_count = 0
-
-        # 오른쪽 아래
-        piece = torch.zeros([1, 3, img_size, img_size])
-        temp = img[
-            :,
-            :,
-            img.shape[2] - img_size : img.shape[2],
-            img.shape[3] - img_size : img.shape[3],
-        ]
-        piece[:, :, : temp.shape[2], : temp.shape[3]] = temp
-
-        with torch.no_grad():
-            pred = model(piece.to(device))
-
-        pred = pred[0].cpu().clone().detach().numpy()
-        pred = pred.transpose(1, 2, 0)
-        pred = pred * 127.5 + 127.5
-
-        crop.append(pred)
-        position.append([img.shape[2] - img_size, img.shape[3] - img_size])
-        batch_count += 1
-
-        if batch_count == batch:
-            crop = np.array(crop).astype(np.float32)
-            for num, (t, l) in enumerate(position):
-                piece = crop[num]
-                h, w, c = result_img[t : t + img_size, l : l + img_size, :].shape
-                result_img[t : t + img_size, l : l + img_size, :] += piece[:h, :w, :]
-                voting_mask[t : t + img_size, l : l + img_size, :] += 1
-            crop = []
-            position = []
-            batch_count = 0
-
-        if batch_count > 0:
-            crop = np.array(crop).astype(np.float32)
-            for num, (t, l) in enumerate(position):
-                piece = crop[num]
-                h, w, c = result_img[t : t + img_size, l : l + img_size, :].shape
-                result_img[t : t + img_size, l : l + img_size, :] += piece[:h, :w, :]
-                voting_mask[t : t + img_size, l : l + img_size, :] += 1
-
-        result_img = result_img / voting_mask
+        result_img = post_preds[0].cpu().detach().numpy()
+        result_img = result_img.transpose(1,2,0)
         result_img = result_img.astype(np.uint8)
-
         result_img = cv2.cvtColor(result_img, cv2.COLOR_RGB2BGR)
+
         results.append(result_img)
 
     return results
 
 
-class InferenceDataset(Dataset):
-    
-    def __init__(self, img, pix2pix_transform, hinet_transform):
-        super(InferenceDataset, self).__init__()
-        pass
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--pix2pix",
+        dest="pix2pix",
+        default="./trained/pix2pix/pix2pix.pth",
+        help="pix2pix 학습 모델 경로",
+    )
+    parser.add_argument(
+        "--hinet",
+        dest="hinet",
+        default="./trained/hinet/hinet.pth",
+        help="HiNet 학습 모델 경로",
+    )
+    parser.add_argument(
+        "--image_path",
+        dest="image_path",
+        default="./input/test_input_img",
+        help="추론 시 활용할 데이터 경로",
+    )
+    parser.add_argument(
+        "--size", dest="size", default=512, type=int, help="추론 시 사용될 윈도우의 크기"
+    )
+    parser.add_argument(
+        "--stride", dest="stride", default=256, type=int, help="추론 시 사용될 stride의 크기"
+    )
+    parser.add_argument(
+        "--batch_size",
+        dest="batch_size",
+        default=32,
+        type=int,
+        help="추론 시 사용될 배치의 크기"
+    )
+    parser.add_argument(
+        "--output_dir",
+        dest="output_dir",
+        default="./submission/",
+        type=str,
+        help="추론 결과를 저장할 디렉토리 경로",
+    )
 
-    def __getitem__(self, idx):
-        return
+    parser = parser.parse_args()
+    pix2pix = get_model("pix2pix", encoder_weights=None, mode="inference")
+    pix2pix.load_state_dict(torch.load(parser.pix2pix))
 
-    def __len__(self):
-        return
+    hinet = get_model("hinet")
+    hinet.load_state_dict(torch.load(parser.hinet))
 
-
-if __name__ == '__main__':
-    model = None
-    transforms = None
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    stride = 256
-    max_batch = 10
-    img_path = "/content/data/test_input_img/test_input_20003.png"
-
-    img = cv2.imread(img_path)
-    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-    input_img = img.copy()
-    img = transforms(image=img)["image"]
-
-    crop = []
-    position = []
-
-    result_img = np.zeros_like(img.numpy().transpose(1, 2, 0))
-    voting_mask = np.zeros_like(img.numpy().transpose(1, 2, 0))
-
-    img = img.unsqueeze(0)
-    for top in range(0, img.shape[2], stride):
-        for left in range(0, img.shape[3], stride):
-            if top + img_size > img.shape[2] or left + img_size > img.shape[3]:
-                continue
-
-            piece = torch.zeros([1, 3, img_size, img_size])
-
-            temp = img[:, :, top : top + img_size, left : left + img_size]
-            piece[:, :, : temp.shape[2], : temp.shape[3]] = temp
-            position.append([top, left])
-            batch_count += 1
-
-            if batch_count == batch:
-                crop = np.array(crop).astype(np.float32)
-                for num, (t, l) in enumerate(position):
-                    piece = crop[num]
-                    h, w, c = result_img[
-                        t : t + img_size, l : l + img_size, :
-                    ].shape
-                    result_img[t : t + img_size, l : l + img_size, :] += piece[
-                        :h, :w, :
-                    ]
-                    voting_mask[t : t + img_size, l : l + img_size, :] += 1
-                crop = []
-                position = []
-                batch_count = 0
-
-    # 가장 자리 1
-    for left in range(0, img.shape[3], stride):
-        if left + img_size > img.shape[3]:
-            continue
-        piece = torch.zeros([1, 3, img_size, img_size])
-        temp = img[
-            :, :, img.shape[2] - img_size : img.shape[2], left : left + img_size
-        ]
-        piece[:, :, : temp.shape[2], : temp.shape[3]] = temp
-
-        with torch.no_grad():
-            pred = model(piece.to(device))
-
-        pred = pred[0].cpu().clone().detach().numpy()
-        pred = pred.transpose(1, 2, 0)
-        pred = pred * 127.5 + 127.5
-
-        crop.append(pred)
-        position.append([img.shape[2] - img_size, left])
-
-        batch_count += 1
-
-        if batch_count == batch:
-            crop = np.array(crop).astype(np.float32)
-            for num, (t, l) in enumerate(position):
-                piece = crop[num]
-                h, w, c = result_img[t : t + img_size, l : l + img_size, :].shape
-                result_img[t : t + img_size, l : l + img_size, :] += piece[
-                    :h, :w, :
-                ]
-                voting_mask[t : t + img_size, l : l + img_size, :] += 1
-            crop = []
-            position = []
-            batch_count = 0
-
-    # 가장 자리 2
-    for top in range(0, img.shape[2], stride):
-        if top + img_size > img.shape[2]:
-            continue
-        piece = torch.zeros([1, 3, img_size, img_size])
-
-        temp = img[
-            :, :, top : top + img_size, img.shape[3] - img_size : img.shape[3]
-        ]
-        piece[:, :, : temp.shape[2], : temp.shape[3]] = temp
-
-        with torch.no_grad():
-            pred = model(piece.to(device))
-        pred = pred[0].cpu().clone().detach().numpy()
-        pred = pred.transpose(1, 2, 0)
-        pred = (pred * 127.5) + 127.5
-
-        crop.append(pred)
-        position.append([top, img.shape[3] - img_size])
-        batch_count += 1
-
-        if batch_count == batch:
-            crop = np.array(crop).astype(np.float32)
-            for num, (t, l) in enumerate(position):
-                piece = crop[num]
-                h, w, c = result_img[t : t + img_size, l : l + img_size, :].shape
-                result_img[t : t + img_size, l : l + img_size, :] += piece[
-                    :h, :w, :
-                ]
-                voting_mask[t : t + img_size, l : l + img_size, :] += 1
-            crop = []
-            position = []
-            batch_count = 0
-
-    # 오른쪽 아래
-    piece = torch.zeros([1, 3, img_size, img_size])
-    temp = img[
-        :,
-        :,
-        img.shape[2] - img_size : img.shape[2],
-        img.shape[3] - img_size : img.shape[3],
-    ]
-    piece[:, :, : temp.shape[2], : temp.shape[3]] = temp
-
+    test_img_paths = sorted(glob.glob(f"{parser.image_path}/*.png"))
+    device = "cuda:0" if torch.cuda.is_available() else "cpu"
     with torch.no_grad():
-        pred = model(piece.to(device))
+        results = predict(
+            pix2pix.to(device), hinet.to(device), device, test_img_paths, get_valid_transform(), parser
+        )
 
-    pred = pred[0].cpu().clone().detach().numpy()
-    pred = pred.transpose(1, 2, 0)
-    pred = pred * 127.5 + 127.5
-
-    crop.append(pred)
-    position.append([img.shape[2] - img_size, img.shape[3] - img_size])
-    batch_count += 1
-
-    if batch_count == batch:
-        crop = np.array(crop).astype(np.float32)
-        for num, (t, l) in enumerate(position):
-            piece = crop[num]
-            h, w, c = result_img[t : t + img_size, l : l + img_size, :].shape
-            result_img[t : t + img_size, l : l + img_size, :] += piece[:h, :w, :]
-            voting_mask[t : t + img_size, l : l + img_size, :] += 1
-        crop = []
-        position = []
-        batch_count = 0
-
-    if batch_count > 0:
-        crop = np.array(crop).astype(np.float32)
-        for num, (t, l) in enumerate(position):
-            piece = crop[num]
-            h, w, c = result_img[t : t + img_size, l : l + img_size, :].shape
-            result_img[t : t + img_size, l : l + img_size, :] += piece[:h, :w, :]
-            voting_mask[t : t + img_size, l : l + img_size, :] += 1
-
-    result_img = result_img / voting_mask
-    result_img = result_img.astype(np.uint8)
-
-    result_img = cv2.cvtColor(result_img, cv2.COLOR_RGB2BGR)
-    results.append(result_img)
+    save_samples(results, epoch=0, save_dir=parser.output_dir)

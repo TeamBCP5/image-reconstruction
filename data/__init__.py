@@ -4,5 +4,6 @@ from .dataset import (
     train_valid_unseen_split,
     Pix2PixDataset,
     HINetDataset,
+    EvalDataset
 )
 from .preprocessing import cut_img, apply_naive_denoise, apply_denoise
