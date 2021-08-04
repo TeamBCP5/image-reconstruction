@@ -25,7 +25,7 @@ def get_model(args, mode="train") -> nn.Module:
 
         else:  # 'valid' or 'test'
             config_G = args.network.generator._asdict()  # encoder_name, ...
-            config_G['encoder_weights'] = None
+            config_G["encoder_weights"] = None
             G_model = smp.Unet(**config_G)
             return G_model
 

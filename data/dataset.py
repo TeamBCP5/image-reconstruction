@@ -338,7 +338,7 @@ def compose_postprocessing_dataset(args, device):
 
             result_img = result_img / voting_mask
             result_img = result_img.astype(np.uint8)
-            result_img = cv2.cvtColor(result_img, cv2.COLOR_BGR2RGB)
+            result_img = cv2.cvtColor(result_img, cv2.COLOR_RGB2BGR)
 
             img_name = os.path.basename(img_path)
             cv2.imwrite(os.path.join(input_save_dir, img_name), result_img)

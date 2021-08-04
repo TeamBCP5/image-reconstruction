@@ -175,11 +175,11 @@ def train(args):
 
         print(
             f"[+] Epoch: {epoch}/{args.epochs}\n",
-            f"* Valid PSNR: {valid_psnr:.4f}\n",
-            f"* Train Generator Loss: {train_loss_G:.4f}\n",
-            f" - L1 Loss: {train_loss_l1*100:.4f}\n",
-            f" - GAN Loss: {train_loss_gan:.4f}\n",
-            f"* Train Discriminator Loss: {train_loss_D:.4f}\n",
+            f"Valid PSNR: {valid_psnr:.4f}\n",
+            f"Train Generator Loss: {train_loss_G:.4f}\n",
+            f" * L1 Loss: {train_loss_l1*100:.4f}\n",
+            f" * GAN Loss: {train_loss_gan:.4f}\n",
+            f"Train Discriminator Loss: {train_loss_D:.4f}\n",
         )
 
         # save best model
