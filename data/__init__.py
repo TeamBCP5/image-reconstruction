@@ -4,6 +4,7 @@ from .dataset import (
     Pix2PixDataset,
     HINetDataset,
     EvalDataset,
+    CutImageDataset,
     compose_postprocessing_dataset,
 )
-from .preprocessing import cut_img, apply_naive_denoise, apply_denoise
+from .preprocessing import cut_img, apply_naive_denoise, apply_denoise, cut_img_verJY

@@ -5,7 +5,8 @@ from typing import List
 import numpy as np
 import cv2
 from utils import remove_all_files_in_dir
-
+import zipfile
+import CutImageDataset
 
 def cut_img(
     img_path_list: List[str],
@@ -103,6 +104,38 @@ def cut_img(
 
     return num
 
+
+def cut_img_verJY(
+    img_path_list: List[str],
+    label_path_list: List[str],
+    save_dir: str,
+    stride: int = 256,
+    patch_size: int = 512,
+    multiscale: bool = False,
+    denoise: str = False,
+    remove_exist: bool = True,
+): 
+    # save directory 생성
+    os.makedirs(os.path.join(save_dir, "train_input_img"), exist_ok=True)
+    os.makedirs(os.path.join(save_dir, "train_label_img"), exist_ok=True)
+    pbar = tqdm(zip(img_path_list, label_path_list), total=len(img_path_list), desc="[Cut & Save Images]")
+    for img_path, label_path in pbar:
+        # 이미지를 슬라이딩 윈도우로 자르기 위한 Dataset 생성
+        ds = CutImageDataset(img_path, label_path, patch_size=patch_size, stride=stride)
+        # file명 추출
+        img_name = img_path.split("/")[-1]
+        img_name = img_name.split(".")[0]
+        label_name = label_path.split("/")[-1]
+        label_name = label_name.split(".")[0]
+    
+        for idx in range(len(ds)):
+            # Dataset으로부터 잘려진 이미지 load
+            image, label = ds[idx]
+            # 이미지 저장
+            image_save_path = os.path.join(save_dir, f"train_input_img/{img_name}_{idx}.png")
+            label_save_path = os.path.join(save_dir, f"train_label_img/{label_name}_{idx}.png")
+            cv2.imwrite(image_save_path, image)
+            cv2.imwrite(label_save_path, label)
 
 def apply_naive_denoise(src):
     input_per_channel = [deepcopy(src[:, :, i]) for i in range(3)]

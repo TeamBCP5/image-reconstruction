@@ -183,8 +183,8 @@ class EvalDataset(Dataset):
     @staticmethod
     def make_grid(shape, patch_size=512, stride=256):
         x, y = shape
-        nx = x // stride + 1
-        ny = y // stride + 1
+        nx = x // stride
+        ny = y // stride
         slices = []
         x1 = 0
         for i in range(nx):
@@ -201,6 +201,49 @@ class EvalDataset(Dataset):
             x1 += stride
         slices = np.array(slices)
         return slices.reshape(-1, 4)
+
+class CutImageDataset(Dataset):
+    def __init__(self, img_path, label_path, patch_size=512, stride=256):
+        self.data = rasterio.open(img_path, num_threads="all_cpus")
+        self.label = rasterio.open(label_path, num_threads="all_cpus")
+        self.shape = self.data.shape
+        self.slices = self.make_grid(self.shape, patch_size, stride)
+
+    def __len__(self):
+        return len(self.slices)
+
+    def __getitem__(self, index):
+        x1, x2, y1, y2 = self.slices[index]
+        image = self.data.read([1, 2, 3], window=Window.from_slices((x1, x2), (y1, y2)))
+        image = np.moveaxis(image, 0, -1)
+        label = self.label.read([1, 2, 3], window=Window.from_slices((x1, x2), (y1, y2)))
+        label = np.moveaxis(label, 0, -1)
+
+        return image, label
+
+    @staticmethod
+    def make_grid(shape, patch_size=512, stride=256):
+        x, y = shape
+        nx = x // stride
+        ny = y // stride
+        slices = []
+        x1 = 0
+        for i in range(nx):
+            x2 = min(x1 + patch_size, x)
+            y1 = 0
+            for j in range(ny):
+                y2 = min(y1 + patch_size, y)
+                if x2 - x1 != patch_size:
+                    x1 = x2 - patch_size
+                if y2 - y1 != patch_size:
+                    y1 = y2 - patch_size
+                slices.append([x1, x2, y1, y2])
+                y1 += stride
+            x1 += stride
+        slices = np.array(slices)
+        return slices.reshape(-1, 4)
+
+
 
 
 def compose_postprocessing_dataset(args, device):
