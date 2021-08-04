@@ -10,9 +10,9 @@ seed: 41
 
 data:
   source: 
-    config: './configs/Pix2Pix.yaml'
-    checkpoint: './checkpoints/ckpt_best_pix2pix.pth' # run inference of main model if there's no data to postprocess
-  dir: '/content/hinet_dataset'
+    config: './configs/HINet.yaml'
+    checkpoint: '' # run inference of main model if there's no data to postprocess
+  dir: '/content/camera_data'
   meta: './configs/train_meta.csv'
   valid_type: 1 # 20 images similar to test images
   full_train: True
@@ -33,4 +33,3 @@ scheduler:
 checkpoint:
   load_path: None
   save_dir: ./checkpoints/
-
