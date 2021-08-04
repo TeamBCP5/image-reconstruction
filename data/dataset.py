@@ -166,13 +166,14 @@ class EvalDataset(Dataset):
     def __init__(self, img_path, patch_size=512, stride=256, transforms=None):
         self.data = rasterio.open(img_path, num_threads="all_cpus")
         self.shape = self.data.shape
-        self.slices = self.make_grid(self.shape, patch_size, stride)
+        self.slices = self.make_grid(self.shape, patch_size, stride) # sliding window 좌표 계산
         self.transforms = transforms
 
     def __len__(self):
         return len(self.slices)
 
     def __getitem__(self, index):
+        # 분할된 이미지와 좌표 반환
         x1, x2, y1, y2 = self.slices[index]
         image = self.data.read([1, 2, 3], window=Window.from_slices((x1, x2), (y1, y2)))
         image = np.moveaxis(image, 0, -1)
@@ -186,12 +187,13 @@ class EvalDataset(Dataset):
         nx = x // stride
         ny = y // stride
         slices = []
-        x1 = 0
+        x1 = 0 # x좌표의 시작점
         for i in range(nx):
-            x2 = min(x1 + patch_size, x)
-            y1 = 0
+            x2 = min(x1 + patch_size, x) # x좌표의 끝점, 이미지 크기를 넘어갈 경우 끝점을 크기로 설정
+            y1 = 0 # y좌표 시작점
             for j in range(ny):
-                y2 = min(y1 + patch_size, y)
+                y2 = min(y1 + patch_size, y) # y좌표의 끝점, 이미지 크기를 넘어갈 경우 끝점을 크기로 설정
+                # 크기가 끝점이 넘어가서 크기가 작아진 patch에 대해 시작점을 앞으로 당김
                 if x2 - x1 != patch_size:
                     x1 = x2 - patch_size
                 if y2 - y1 != patch_size:
@@ -207,12 +209,13 @@ class CutImageDataset(Dataset):
         self.data = rasterio.open(img_path, num_threads="all_cpus")
         self.label = rasterio.open(label_path, num_threads="all_cpus")
         self.shape = self.data.shape
-        self.slices = self.make_grid(self.shape, patch_size, stride)
+        self.slices = self.make_grid(self.shape, patch_size, stride) # sliding window 좌표 계산
 
     def __len__(self):
         return len(self.slices)
 
     def __getitem__(self, index):
+        # 좌표에 따라 분할된 이미지와 라벨 반환
         x1, x2, y1, y2 = self.slices[index]
         image = self.data.read([1, 2, 3], window=Window.from_slices((x1, x2), (y1, y2)))
         image = np.moveaxis(image, 0, -1)
@@ -227,12 +230,13 @@ class CutImageDataset(Dataset):
         nx = x // stride
         ny = y // stride
         slices = []
-        x1 = 0
+        x1 = 0 # x좌표의 시작점
         for i in range(nx):
-            x2 = min(x1 + patch_size, x)
-            y1 = 0
+            x2 = min(x1 + patch_size, x) # x좌표의 끝점, 이미지 크기를 넘어갈 경우 끝점을 크기로 설정
+            y1 = 0 # y좌표 시작점
             for j in range(ny):
-                y2 = min(y1 + patch_size, y)
+                y2 = min(y1 + patch_size, y) # y좌표의 끝점, 이미지 크기를 넘어갈 경우 끝점을 크기로 설정
+                # 크기가 끝점이 넘어가서 크기가 작아진 patch에 대해 시작점을 앞으로 당김
                 if x2 - x1 != patch_size:
                     x1 = x2 - patch_size
                 if y2 - y1 != patch_size:
