@@ -98,6 +98,7 @@ class HINet(nn.Module):
         self.cat12 = nn.Conv2d(prev_channels * 2, prev_channels, 1, 1, 0)
 
         self.last = conv3x3(prev_channels, in_chn, bias=True)
+        self._initialize()
 
     def forward(self, x):
         image = x
@@ -142,7 +143,7 @@ class HINet(nn.Module):
         gain = nn.init.calculate_gain("leaky_relu", 0.20)
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
-                nn.init.orthogonal_(m.weight, gain=gain)
+                nn.init.kaiming_normal_(m.weight, a=0, mode='fan_in')
                 if not m.bias is None:
                     nn.init.constant_(m.bias, 0)
 
