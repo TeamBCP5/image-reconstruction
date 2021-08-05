@@ -166,14 +166,13 @@ class EvalDataset(Dataset):
     def __init__(self, img_path, patch_size=512, stride=256, transforms=None):
         self.data = rasterio.open(img_path, num_threads="all_cpus")
         self.shape = self.data.shape
-        self.slices = self.make_grid(self.shape, patch_size, stride) # sliding window 좌표 계산
+        self.slices = self.make_grid(self.shape, patch_size, stride)
         self.transforms = transforms
 
     def __len__(self):
         return len(self.slices)
 
     def __getitem__(self, index):
-        # 분할된 이미지와 좌표 반환
         x1, x2, y1, y2 = self.slices[index]
         image = self.data.read([1, 2, 3], window=Window.from_slices((x1, x2), (y1, y2)))
         image = np.moveaxis(image, 0, -1)
@@ -184,16 +183,15 @@ class EvalDataset(Dataset):
     @staticmethod
     def make_grid(shape, patch_size=512, stride=256):
         x, y = shape
-        nx = x // stride
-        ny = y // stride
+        nx = x // stride + 1
+        ny = y // stride + 1
         slices = []
-        x1 = 0 # x좌표의 시작점
+        x1 = 0
         for i in range(nx):
-            x2 = min(x1 + patch_size, x) # x좌표의 끝점, 이미지 크기를 넘어갈 경우 끝점을 크기로 설정
-            y1 = 0 # y좌표 시작점
+            x2 = min(x1 + patch_size, x)
+            y1 = 0
             for j in range(ny):
-                y2 = min(y1 + patch_size, y) # y좌표의 끝점, 이미지 크기를 넘어갈 경우 끝점을 크기로 설정
-                # 크기가 끝점이 넘어가서 크기가 작아진 patch에 대해 시작점을 앞으로 당김
+                y2 = min(y1 + patch_size, y)
                 if x2 - x1 != patch_size:
                     x1 = x2 - patch_size
                 if y2 - y1 != patch_size:
@@ -204,22 +202,24 @@ class EvalDataset(Dataset):
         slices = np.array(slices)
         return slices.reshape(-1, 4)
 
+
 class CutImageDataset(Dataset):
     def __init__(self, img_path, label_path, patch_size=512, stride=256):
         self.data = rasterio.open(img_path, num_threads="all_cpus")
         self.label = rasterio.open(label_path, num_threads="all_cpus")
         self.shape = self.data.shape
-        self.slices = self.make_grid(self.shape, patch_size, stride) # sliding window 좌표 계산
+        self.slices = self.make_grid(self.shape, patch_size, stride)
 
     def __len__(self):
         return len(self.slices)
 
     def __getitem__(self, index):
-        # 좌표에 따라 분할된 이미지와 라벨 반환
         x1, x2, y1, y2 = self.slices[index]
         image = self.data.read([1, 2, 3], window=Window.from_slices((x1, x2), (y1, y2)))
         image = np.moveaxis(image, 0, -1)
-        label = self.label.read([1, 2, 3], window=Window.from_slices((x1, x2), (y1, y2)))
+        label = self.label.read(
+            [1, 2, 3], window=Window.from_slices((x1, x2), (y1, y2))
+        )
         label = np.moveaxis(label, 0, -1)
 
         return image, label
@@ -230,13 +230,12 @@ class CutImageDataset(Dataset):
         nx = x // stride
         ny = y // stride
         slices = []
-        x1 = 0 # x좌표의 시작점
-        for i in range(nx):
-            x2 = min(x1 + patch_size, x) # x좌표의 끝점, 이미지 크기를 넘어갈 경우 끝점을 크기로 설정
-            y1 = 0 # y좌표 시작점
-            for j in range(ny):
-                y2 = min(y1 + patch_size, y) # y좌표의 끝점, 이미지 크기를 넘어갈 경우 끝점을 크기로 설정
-                # 크기가 끝점이 넘어가서 크기가 작아진 patch에 대해 시작점을 앞으로 당김
+        x1 = 0
+        for _ in range(nx):
+            x2 = min(x1 + patch_size, x)
+            y1 = 0
+            for _ in range(ny):
+                y2 = min(y1 + patch_size, y)
                 if x2 - x1 != patch_size:
                     x1 = x2 - patch_size
                 if y2 - y1 != patch_size:
@@ -246,8 +245,6 @@ class CutImageDataset(Dataset):
             x1 += stride
         slices = np.array(slices)
         return slices.reshape(-1, 4)
-
-
 
 
 def compose_postprocessing_dataset(args, device):
@@ -261,6 +258,13 @@ def compose_postprocessing_dataset(args, device):
     ):
         return
 
+    print(
+        f"[+] Compose postprocessing dataset\n",
+        "There's no dataset to train postprocessor.\n",
+        "Start composing dataset using main model(pix2pix).\n",
+        f"Input images will be saved in '{input_save_dir}'.\n",
+        f"Label images will be saved in '{label_save_dir}'.\n",
+    )
     src_args = Flags(args.data.source.config).get()
     stride, patch_size = src_args.data.stride, src_args.data.patch_size
     G_model = get_model(src_args, mode="test")
@@ -268,7 +272,7 @@ def compose_postprocessing_dataset(args, device):
     G_model.load_state_dict(ckpt)
     G_model.to(device)
     G_model.eval()
-    print(f"[+] Generation model loaded from '{args.data.source.checkpoint}'\n")
+    print(f"[+] Generation model\n", f"Loaded from '{args.data.source.checkpoint}'\n")
 
     train_input_paths = sorted(
         glob(os.path.join(src_args.data.dir, "train_input_img", "*"))
@@ -387,9 +391,11 @@ def compose_postprocessing_dataset(args, device):
             result_img = result_img.astype(np.uint8)
             result_img = cv2.cvtColor(result_img, cv2.COLOR_RGB2BGR)
 
+            # save input images
             img_name = os.path.basename(img_path)
             cv2.imwrite(os.path.join(input_save_dir, img_name), result_img)
 
+            # save label images
             lbl_name = os.path.basename(lbl_path)
             shutil.copy(lbl_path, os.path.join(label_save_dir, lbl_name))
 

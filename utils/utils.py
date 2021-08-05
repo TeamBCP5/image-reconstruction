@@ -31,6 +31,7 @@ def get_model(args, mode="train") -> nn.Module:
 
     elif args.network.name == "hinet":
         model = HINet(depth=4)
+        init_net(model)
         return model
 
     else:
@@ -127,9 +128,37 @@ def print_system_envs():
         f"GPU Memory Size : {gpu_mem_size:.4f} GB\n",
     )
 
+def init_net(net, init_type='kaiming', init_gain=0.02):
+    init_weights(net, init_type, gain=init_gain)
+    return net
+
+def init_weights(net, init_type='kaiming', gain=0.02):
+    def init_func(m):
+        classname = m.__class__.__name__
+        if hasattr(m, 'weight') and (classname.find('conv') != -1 or classname.find('Linear') != -1):
+            if init_type == 'normal':
+                nn.init.normal_(m.weight.data, 0.0, gain)
+            elif init_type == 'xavier':
+                nn.init.xavier_normal_(m.weight.data, gain=gain)
+            elif init_type == 'kaiming':
+                nn.init.kaiming_normal_(m.weight.data, a=0, mode='fan_in')
+            elif init_type == 'orthogonal':
+                nn.init.orthogonal_(m.weight.data, gain=gain)
+            else:
+                raise NotImplementedError('initialization method [%s] is not implemented' % init_type)
+            if hasattr(m, 'bias') and m.bias is not None:
+                nn.init.constant_(m.bias.data, 0.0)
+        elif classname.find('BatchNorm2d') != -1:
+            nn.init.normal_(m.weight.data, 1.0, gain)
+            nn.init.constant_(m.bias.data, 0.0)
+
+    print('initialize network with %s' % init_type)
+    net.apply(init_func)
+
 
 def truncate_aligned_model(model: nn.Module) -> None:
     """입력된 모델을 kill하는 함수. 한정된 GPU 자원의 과부하 방지를 위해 사용"""
     del model
     gc.collect()
     torch.cuda.empty_cache()
+

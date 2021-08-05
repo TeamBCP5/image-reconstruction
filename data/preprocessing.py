@@ -5,8 +5,10 @@ from typing import List
 import numpy as np
 import cv2
 from utils import remove_all_files_in_dir
-import zipfile
-import CutImageDataset
+
+# import CutImageDataset
+from data.dataset import CutImageDataset
+
 
 def cut_img(
     img_path_list: List[str],
@@ -114,28 +116,41 @@ def cut_img_verJY(
     multiscale: bool = False,
     denoise: str = False,
     remove_exist: bool = True,
-): 
+):
     # save directory 생성
-    os.makedirs(os.path.join(save_dir, "train_input_img"), exist_ok=True)
-    os.makedirs(os.path.join(save_dir, "train_label_img"), exist_ok=True)
-    pbar = tqdm(zip(img_path_list, label_path_list), total=len(img_path_list), desc="[Cut & Save Images]")
+    input_save_dir = os.path.join(save_dir, f"train_input_img_{patch_size}")
+    label_save_dir = os.path.join(save_dir, f"train_label_img_{patch_size}")
+    os.makedirs(input_save_dir, exist_ok=True)
+    os.makedirs(label_save_dir, exist_ok=True)
+
+    pbar = tqdm(
+        zip(img_path_list, label_path_list),
+        total=len(img_path_list),
+        desc="[Cut & Save Images]",
+    )
     for img_path, label_path in pbar:
         # 이미지를 슬라이딩 윈도우로 자르기 위한 Dataset 생성
         ds = CutImageDataset(img_path, label_path, patch_size=patch_size, stride=stride)
+
         # file명 추출
-        img_name = img_path.split("/")[-1]
-        img_name = img_name.split(".")[0]
-        label_name = label_path.split("/")[-1]
-        label_name = label_name.split(".")[0]
-    
+        img_name = os.path.basename(img_path).split(".png")[0]
+        label_name = os.path.basename(label_path).split(".png")[0]
+
         for idx in range(len(ds)):
             # Dataset으로부터 잘려진 이미지 load
             image, label = ds[idx]
             # 이미지 저장
-            image_save_path = os.path.join(save_dir, f"train_input_img/{img_name}_{idx}.png")
-            label_save_path = os.path.join(save_dir, f"train_label_img/{label_name}_{idx}.png")
+            image_save_path = os.path.join(input_save_dir, f"{img_name}_{idx:0>3d}.png")
+            label_save_path = os.path.join(
+                label_save_dir, f"{label_name}_{idx:0>3d}.png"
+            )
             cv2.imwrite(image_save_path, cv2.cvtColor(image, cv2.COLOR_RGB2BGR))
             cv2.imwrite(label_save_path, cv2.cvtColor(label, cv2.COLOR_RGB2BGR))
+            # image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+            # label = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+            # cv2.imwrite(image_save_path, image)
+            # cv2.imwrite(label_save_path, label)
+
 
 def apply_naive_denoise(src):
     input_per_channel = [deepcopy(src[:, :, i]) for i in range(3)]
@@ -151,7 +166,8 @@ def apply_naive_denoise(src):
 def apply_denoise(
     src: np.array, threshold: int = 30
 ) -> np.array:  # NOTE. now for BGR(or RGB) channel image
-    """input 이미지의 노이즈를 제거. 3264x2448 기준 약 70ms 소요
+    """
+    input 이미지의 노이즈를 제거. 3264x2448 기준 약 70ms 소요
     Process:
         (1) src 이미지로부터 median blur 이미지를 추출
             - 정보 손실을 최소화하기 위해 R, B 채널에는 5x5의 필터 사이즈를, G 채널에는 3x3의 필터 사이즈를 적용
