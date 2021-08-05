@@ -134,8 +134,8 @@ def cut_img_verJY(
             # 이미지 저장
             image_save_path = os.path.join(save_dir, f"train_input_img/{img_name}_{idx}.png")
             label_save_path = os.path.join(save_dir, f"train_label_img/{label_name}_{idx}.png")
-            cv2.imwrite(image_save_path, image)
-            cv2.imwrite(label_save_path, label)
+            cv2.imwrite(image_save_path, cv2.cvtColor(image, cv2.COLOR_RGB2BGR))
+            cv2.imwrite(label_save_path, cv2.cvtColor(label, cv2.COLOR_RGB2BGR))
 
 def apply_naive_denoise(src):
     input_per_channel = [deepcopy(src[:, :, i]) for i in range(3)]
