@@ -75,7 +75,6 @@ class MS_SSIM(_Loss):
         self.max_val = max_val
 
     def _ssim(self, img1, img2, size_average=True):
-
         _, c, w, h = img1.size()
         window_size = min(w, h, 11)
         sigma = 1.5 * window_size / 11
@@ -99,7 +98,6 @@ class MS_SSIM(_Loss):
             F.conv2d(img1 * img2, window, padding=window_size // 2, groups=self.channel)
             - mu1_mu2
         )
-
         C1 = (0.01 * self.max_val) ** 2
         C2 = (0.03 * self.max_val) ** 2
         V1 = 2.0 * sigma12 + C2
@@ -110,9 +108,7 @@ class MS_SSIM(_Loss):
             return ssim_map.mean(), mcs_map.mean()
 
     def ms_ssim(self, img1, img2, levels=5):
-
         weight = Variable(torch.Tensor([0.0448, 0.2856, 0.3001, 0.2363, 0.1333]).cuda())
-
         msssim = Variable(
             torch.Tensor(
                 levels,
@@ -131,14 +127,12 @@ class MS_SSIM(_Loss):
             filtered_im2 = F.avg_pool2d(img2, kernel_size=2, stride=2)
             img1 = filtered_im1
             img2 = filtered_im2
-
         value = torch.prod(mcs[0 : levels - 1] ** weight[0 : levels - 1]) * (
             msssim[levels - 1] ** weight[levels - 1]
         )
         return value
 
     def forward(self, img1, img2):
-
         return 0.16 * F.l1_loss(img1, img2) + 0.84 * (1 - self.ms_ssim(img1, img2))
 
 
@@ -149,17 +143,15 @@ class HINetLoss(nn.Module):
         self.kernel = torch.matmul(k.t(), k).unsqueeze(0).repeat(3, 1, 1, 1)
         if torch.cuda.is_available():
             self.kernel = self.kernel.cuda()
-        self.loss = CharbonnierLoss()
-        self.loss2 = CharbonnierLoss()
-        self.ms_ssim = MS_SSIM()
+        self.charbonnier_loss_fn = CharbonnierLoss()
+        self.ms_ssim_loss_fn = MS_SSIM()
 
     def forward(self, x, y):
-
         loss = (
-            self.loss2(x[0], y)
-            + self.loss2(x[1], y)
-            + 5 * (1 - self.ms_ssim.ms_ssim(x[0], y))
-            + 5 * (1 - self.ms_ssim.ms_ssim(x[1], y))
+            self.charbonnier_loss_fn(x[0], y)
+            + self.charbonnier_loss_fn(x[1], y)
+            + 5 * (1 - self.ms_ssim_loss_fn.ms_ssim(x[0], y))
+            + 5 * (1 - self.ms_ssim_loss_fn.ms_ssim(x[1], y))
         )
         return loss
 

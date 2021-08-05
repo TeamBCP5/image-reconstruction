@@ -56,7 +56,7 @@ def predict(args):
             for images, (x1, x2, y1, y2) in dl:
                 with autocast():
                     pred = main_model(images.to(device).float())
-                    pred = torch.tanh(pred)
+                    pred = torch.tanh(pred) # NOTE
                     pred = (pred * 0.5) + 0.5
                 for i in range(len(x1)):
                     preds[:, x1[i] : x2[i], y1[i] : y2[i]] += pred[i]

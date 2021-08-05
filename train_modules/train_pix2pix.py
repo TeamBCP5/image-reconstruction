@@ -9,6 +9,7 @@ from data import (
     train_valid_split,
     Pix2PixDataset,
     cut_img,
+    cut_img_verJY,
     get_train_transform,
     get_valid_transform,
 )
@@ -42,22 +43,29 @@ def train(args):
         args.data.dir, valid_type=args.data.valid_type, full_train=args.data.full_train
     )
 
-    cut_img(
-        train_input_paths,
+    cut_img_verJY(
+        img_path_list=train_input_paths,
+        label_path_list=train_label_paths,
+        save_dir=args.data.dir,
         stride=args.data.stride,
         patch_size=args.data.patch_size,
-        multiscale=args.data.multiscale,
-        denoise=args.data.denoise,
-        save_dir=os.path.join(args.data.dir, "train_input_img"),
     )
-    cut_img(
-        train_label_paths,
-        stride=args.data.stride,
-        patch_size=args.data.patch_size,
-        multiscale=args.data.multiscale,
-        denoise=args.data.denoise,
-        save_dir=os.path.join(args.data.dir, "train_label_img"),
-    )
+    # cut_img(
+    #     train_input_paths,
+    #     stride=args.data.stride,
+    #     patch_size=args.data.patch_size,
+    #     multiscale=args.data.multiscale,
+    #     denoise=args.data.denoise,
+    #     save_dir=os.path.join(args.data.dir, "train_input_img"),
+    # )
+    # cut_img(
+    #     train_label_paths,
+    #     stride=args.data.stride,
+    #     patch_size=args.data.patch_size,
+    #     multiscale=args.data.multiscale,
+    #     denoise=args.data.denoise,
+    #     save_dir=os.path.join(args.data.dir, "train_label_img"),
+    # )
 
     train_transform = get_train_transform(args.network.name)
     valid_transform = get_valid_transform(args.network.name)

@@ -96,6 +96,7 @@ def train(args):
         train_loss_list = []
         for img, label in tqdm(train_loader, desc="[Train]"):
             img, label = img.float().to(device), label.float().to(device)
+            optimizer.zero_grad()
 
             with autocast():
                 pred = model(img)
@@ -103,7 +104,6 @@ def train(args):
 
             scaler.scale(loss).backward()
             scaler.unscale_(optimizer)
-
             nn.utils.clip_grad_norm_(model.parameters(), 0.01)
             scaler.step(optimizer)
             scaler.update()
