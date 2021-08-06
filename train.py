@@ -70,7 +70,7 @@ if __name__ == "__main__":
         train_module = getattr(
             import_module(f"train_modules.train_{pix2pix_args.network.name}"), "train"
             )
-        print(f"<<< Train Pix2Pix >>>")
+        print("<<< Train Pix2Pix >>>")
         print_arguments(pix2pix_args)
         train_module(pix2pix_args)
 
@@ -81,13 +81,13 @@ if __name__ == "__main__":
         # phase 1
             # input: origin input image
             # label: origin label image
-        print(f"<<< Train HINet - Phase 1 >>>")
+        print("<<< Train HINet - Phase 1 >>>")
         print_arguments(hinet_phase1_args)
         train_module(hinet_phase1_args, phase=1)
         # phase 2
             # input: main model(pix2pix) output image
             # label: origin label image
-        print(f"<<< Train HINet - Phase 2 >>>")
+        print("<<< Train HINet - Phase 2 >>>")
         print_arguments(hinet_phase2_args)
         train_module(hinet_phase2_args, phase=2) 
     
@@ -111,6 +111,6 @@ if __name__ == "__main__":
         train_module = getattr(
             import_module(f"train_modules.train_{args.network.name}"), "train"
             )
-        print(f"<<< Train HINet in Single >>>")
+        print("<<< Train HINet in Single >>>")
         print_arguments(args)
         train_module(args, phase=1)
