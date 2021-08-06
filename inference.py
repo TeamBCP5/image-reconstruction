@@ -8,16 +8,11 @@ import torch
 from torch.utils.data import DataLoader
 from torch.cuda.amp import autocast
 import torch.nn.functional as F
-from utils import save_samples, get_model, Flags, filter_img_id, print_arguments
+from utils import save_samples, get_model, Flags, print_arguments
 from data import get_valid_transform, CutImageDataset
 
 
-from time import time
-
-
 def predict(args):
-    start = time()
-
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     os.makedirs(args.output_dir, exist_ok=True)
 
@@ -134,10 +129,5 @@ if __name__ == "__main__":
     )
 
     args = parser.parse_args()
-
-    print("=" * 100)
-    print(args)
-    print("=" * 100)
-    print()
-
+    print_arguments(args)
     predict(args)
