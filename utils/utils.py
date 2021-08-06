@@ -9,7 +9,6 @@ import numpy as np
 import cv2
 import torch
 from torch import nn
-import segmentation_models_pytorch as smp
 from importlib import import_module
 from networks import HINet, define_D, Unet
 
@@ -20,7 +19,6 @@ def get_model(args, mode="train") -> nn.Module:
             config_G = args.network.generator._asdict()  # encoder_name, ...
             config_G.pop('classes')
             config_D = args.network.discriminator._asdict()  # ndf, ...
-            # G_model = smp.Unet(**config_G)
             G_model = Unet(**config_G)
             G_model.segmentation_head[2] = nn.Tanh()
             D_model = define_D(**config_D)
@@ -29,7 +27,7 @@ def get_model(args, mode="train") -> nn.Module:
         else:  # 'valid' or 'test'
             config_G = args.network.generator._asdict()  # encoder_name, ...
             config_G["encoder_weights"] = None
-            G_model = smp.Unet(**config_G)
+            G_model = Unet(**config_G)
             G_model.segmentation_head[2] = nn.Tanh()
             return G_model
 
