@@ -67,12 +67,12 @@ if __name__ == "__main__":
             raise ValueError("Network work name is not equal to 'hinet'. check configuration file.")
 
         # train Pix2Pix
-        # train_module = getattr(
-        #     import_module(f"train_modules.train_{pix2pix_args.network.name}"), "train"
-        #     )
-        # print(f"<<< Train Pix2Pix >>>")
-        # print_arguments(pix2pix_args)
-        # train_module(pix2pix_args)
+        train_module = getattr(
+            import_module(f"train_modules.train_{pix2pix_args.network.name}"), "train"
+            )
+        print(f"<<< Train Pix2Pix >>>")
+        print_arguments(pix2pix_args)
+        train_module(pix2pix_args)
 
         # train HINet
         train_module = getattr(
