@@ -99,7 +99,7 @@ if __name__ == "__main__":
         train_module = getattr(
             import_module(f"train_modules.train_{args.network.name}"), "train"
             )
-        print(f"<<< Train Pix2Pix in Single >>>")
+        print("<<< Train Pix2Pix in Single >>>")
         print_arguments(args)
         train_module(args)
     
