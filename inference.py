@@ -100,7 +100,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--config_post",
         dest="cfg_post",
-        default="./configs/HINet_phase1.yaml",
+        default="./configs/HINet_phase2.yaml",
         help="Postprocessing 모델 config 파일 경로",
     )
     parser.add_argument(
@@ -127,7 +127,17 @@ if __name__ == "__main__":
     parser.add_argument(
         "--output_dir", default="./submission/", type=str, help="추론 결과를 저장할 디렉토리 경로"
     )
-
     args = parser.parse_args()
+
+    # exception
+    if not os.path.isfile(args.ckpt_main):
+        raise ValueError(f"There's no checkpoint '{args.ckpt_main}'")
+
+    if not os.path.isfile(args.ckpt_post):
+        raise ValueError(f"There's no checkpoint '{args.ckpt_post}'")
+
+    if not os.path.isdir(args.output_dir):
+        raise ValueError(f"There's no directory '{args.output_dir}'")
+        
     print_arguments(args)
     predict(args)
