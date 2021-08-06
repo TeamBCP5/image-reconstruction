@@ -8,7 +8,6 @@ import pandas as pd
 import cv2
 import torch
 from torch.utils.data import Dataset, DataLoader
-from torch.cuda.amp import autocast
 import albumentations as A
 import rasterio
 from rasterio.windows import Window

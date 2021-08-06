@@ -1,4 +1,3 @@
-import cv2
 import albumentations as A
 from albumentations.pytorch.transforms import ToTensorV2
 

@@ -18,8 +18,6 @@ from utils import (
     get_scheduler,
     get_model,
     set_seed,
-    remove_all_files_in_dir,
-    print_gpu_status,
     print_system_envs,
     psnr_score,
     GANLoss,

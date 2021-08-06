@@ -4,7 +4,6 @@ from copy import deepcopy
 from typing import List
 import numpy as np
 import cv2
-from utils import remove_all_files_in_dir
 from data import CutImageDataset
 
 
