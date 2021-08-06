@@ -6,9 +6,7 @@ import torch
 from torch import nn
 from torch.utils.data import DataLoader
 from torch.cuda.amp import autocast, GradScaler
-from networks import HINet
 from utils import (
-    Flags,
     psnr_score,
     HINetLoss,
     get_model,
