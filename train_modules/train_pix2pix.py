@@ -7,11 +7,11 @@ from torch import nn
 from torch.utils.data import DataLoader
 from data import (
     train_valid_split,
-    Pix2PixDataset,
     cut_img,
-    cut_img_verJY,
     get_train_transform,
     get_valid_transform,
+    Pix2PixDataset,
+    CutImageDataset
 )
 from utils import (
     get_optimizer,
@@ -28,6 +28,7 @@ from networks import set_requires_grad
 
 
 def train(args):
+    print(f"<< Train Pix2Pix >>\n",)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print_system_envs()
     set_seed(args.seed)
@@ -43,29 +44,13 @@ def train(args):
         args.data.dir, valid_type=args.data.valid_type, full_train=args.data.full_train
     )
 
-    cut_img_verJY(
+    cut_img(
         img_path_list=train_input_paths,
         label_path_list=train_label_paths,
         save_dir=args.data.dir,
         stride=args.data.stride,
         patch_size=args.data.patch_size,
     )
-    # cut_img(
-    #     train_input_paths,
-    #     stride=args.data.stride,
-    #     patch_size=args.data.patch_size,
-    #     multiscale=args.data.multiscale,
-    #     denoise=args.data.denoise,
-    #     save_dir=os.path.join(args.data.dir, "train_input_img"),
-    # )
-    # cut_img(
-    #     train_label_paths,
-    #     stride=args.data.stride,
-    #     patch_size=args.data.patch_size,
-    #     multiscale=args.data.multiscale,
-    #     denoise=args.data.denoise,
-    #     save_dir=os.path.join(args.data.dir, "train_label_img"),
-    # )
 
     train_transform = get_train_transform(args.network.name)
     valid_transform = get_valid_transform(args.network.name)
@@ -212,130 +197,42 @@ def train(args):
                 f"Checkpoint saved: '{ckpt_save_path}'\n",
             )
 
-
 def validation(
     model,
-    img_paths,
-    label_paths,
-    patch_size=512,
-    stride=256,
+    img_paths: list,
+    label_paths: list,
+    patch_size: int=512,
+    stride: int=256,
     transforms=None,
     device=None,
 ):
     model.eval()
-    valid_psnrs = []
+    batch_size = 32
+
+    valid_psnr_list = []
     with torch.no_grad():
-        for img_path, label_path in tqdm(
+        for img_path, lbl_path in tqdm(
             zip(img_paths, label_paths), desc="[Validation]"
         ):
-            img = cv2.imread(img_path)
-            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-            label = cv2.imread(label_path)
-            label = cv2.cvtColor(label, cv2.COLOR_BGR2RGB)
+            ds = CutImageDataset(img_path, patch_size=patch_size, stride=stride, transforms=transforms)
+            dl = DataLoader(ds, batch_size=batch_size, shuffle=False, drop_last=False)
 
-            img = transforms(image=img)["image"]
-
-            crop = []
-            position = []
-
-            result_img = np.zeros_like(img.numpy().transpose(1, 2, 0))
-            voting_mask = np.zeros_like(img.numpy().transpose(1, 2, 0))
-
-            img = img.unsqueeze(0).float()
-            for top in range(0, img.shape[2], stride):
-                for left in range(0, img.shape[3], stride):
-                    if (
-                        top + patch_size > img.shape[2]
-                        or left + patch_size > img.shape[3]
-                    ):
-                        continue
-                    piece = torch.zeros([1, 3, patch_size, patch_size])
-                    temp = img[:, :, top : top + patch_size, left : left + patch_size]
-                    piece[:, :, : temp.shape[2], : temp.shape[3]] = temp
-
-                    pred = model(piece.to(device))
-                    pred = pred[0].cpu().clone().detach().numpy()
-                    pred = pred.transpose(1, 2, 0)
-                    pred = pred * 127.5 + 127.5
-
-                    crop.append(pred)
-                    position.append([top, left])
-
-            # 가장 자리 1
-            for left in range(0, img.shape[3], stride):
-                if left + patch_size > img.shape[3]:
-                    continue
-                piece = torch.zeros([1, 3, patch_size, patch_size])
-                temp = img[
-                    :,
-                    :,
-                    img.shape[2] - patch_size : img.shape[2],
-                    left : left + patch_size,
-                ]
-                piece[:, :, : temp.shape[2], : temp.shape[3]] = temp
-
-                pred = model(piece.to(device))
-                pred = pred[0].cpu().clone().detach().numpy()
-                pred = pred.transpose(1, 2, 0)
+            # main light scattering reduction(pix2pix)
+            preds = torch.zeros(3, ds.shape[0], ds.shape[1]).to(device)
+            votes = torch.zeros(3, ds.shape[0], ds.shape[1]).to(device)
+            for images, (x1, x2, y1, y2) in dl:
+                pred = model(images.to(device).float()) # [C, W, H]
                 pred = pred * 127.5 + 127.5
+                for i in range(len(x1)):
+                    preds[:, x1[i] : x2[i], y1[i] : y2[i]] += pred[i]
+                    votes[:, x1[i] : x2[i], y1[i] : y2[i]] += 1
+            preds /= votes
+            preds = preds.cpu().detach().numpy().astype(np.uint8)
+            preds = preds.transpose(1, 2, 0)
+            preds = cv2.cvtColor(preds, cv2.COLOR_RGB2BGR)
 
-                crop.append(pred)
-                position.append([img.shape[2] - patch_size, left])
+            label = cv2.imread(lbl_path)
+            valid_psnr_list.append(psnr_score(preds.astype(float), label.astype(float)))
 
-            # 가장 자리 2
-            for top in range(0, img.shape[2], stride):
-                if top + patch_size > img.shape[2]:
-                    continue
-                piece = torch.zeros([1, 3, patch_size, patch_size])
-                temp = img[
-                    :,
-                    :,
-                    top : top + patch_size,
-                    img.shape[3] - patch_size : img.shape[3],
-                ]
-                piece[:, :, : temp.shape[2], : temp.shape[3]] = temp
-
-                pred = model(piece.to(device))
-                pred = pred[0].cpu().clone().detach().numpy()
-                pred = pred.transpose(1, 2, 0)
-                pred = pred * 127.5 + 127.5
-
-                crop.append(pred)
-                position.append([top, img.shape[3] - patch_size])
-
-            # 오른쪽 아래
-            piece = torch.zeros([1, 3, patch_size, patch_size])
-            temp = img[
-                :,
-                :,
-                img.shape[2] - patch_size : img.shape[2],
-                img.shape[3] - patch_size : img.shape[3],
-            ]
-            piece[:, :, : temp.shape[2], : temp.shape[3]] = temp
-
-            pred = model(piece.to(device))
-            pred = pred[0].cpu().clone().detach().numpy()
-            pred = pred.transpose(1, 2, 0)  # H, W, C
-            pred = pred * 127.5 + 127.5
-
-            crop.append(pred)
-            position.append([img.shape[2] - patch_size, img.shape[3] - patch_size])
-
-            # 취합
-            crop = np.array(crop).astype(np.float32)
-            for num, (t, l) in enumerate(position):
-                piece = crop[num]
-                h, w, c = result_img[t : t + patch_size, l : l + patch_size, :].shape
-                result_img[t : t + patch_size, l : l + patch_size, :] += piece[
-                    :h, :w, :
-                ]
-                voting_mask[t : t + patch_size, l : l + patch_size, :] += 1
-
-            result_img = result_img / voting_mask
-            result_img = result_img.astype(np.uint8)
-            valid_psnrs.append(
-                psnr_score(result_img.astype(float), label.astype(float), 255)
-            )
-
-    valid_psnr = np.mean(valid_psnrs)
+    valid_psnr = np.mean(valid_psnr_list)
     return valid_psnr

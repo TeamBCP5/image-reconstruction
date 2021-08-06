@@ -8,11 +8,16 @@ import torch
 from torch.utils.data import DataLoader
 from torch.cuda.amp import autocast
 import torch.nn.functional as F
-from utils import save_samples, get_model, Flags, filter_img_id
-from data import get_valid_transform, EvalDataset
+from utils import save_samples, get_model, Flags, filter_img_id, print_arguments
+from data import get_valid_transform, CutImageDataset
+
+
+from time import time
 
 
 def predict(args):
+    start = time()
+
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     os.makedirs(args.output_dir, exist_ok=True)
 
@@ -47,7 +52,9 @@ def predict(args):
             img_paths, total=len(img_paths), position=0, leave=True, desc="[Inference]"
         )
         for img_path in pbar:
-            ds = EvalDataset(img_path, patch_size, stride, transforms)
+            ds = CutImageDataset(
+                img_path, patch_size=patch_size, stride=stride, transforms=transforms
+            )
             dl = DataLoader(ds, batch_size=batch_size, shuffle=False, drop_last=False)
 
             # main light scattering reduction(pix2pix)
@@ -56,7 +63,6 @@ def predict(args):
             for images, (x1, x2, y1, y2) in dl:
                 with autocast():
                     pred = main_model(images.to(device).float())
-                    pred = torch.tanh(pred) # NOTE
                     pred = (pred * 0.5) + 0.5
                 for i in range(len(x1)):
                     preds[:, x1[i] : x2[i], y1[i] : y2[i]] += pred[i]
@@ -99,7 +105,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--config_post",
         dest="cfg_post",
-        default="./configs/HINet.yaml",
+        default="./configs/HINet_phase1.yaml",
         help="Postprocessing 모델 config 파일 경로",
     )
     parser.add_argument(
@@ -117,7 +123,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--image_dir",
         dest="img_dir",
-        default="./content/data/test_input_img",
+        default="/content/data/test_input_img",
         help="추론 시 활용할 데이터 경로",
     )
     parser.add_argument("--patch_size", default=512, type=int, help="추론 시 사용될 윈도우의 크기")

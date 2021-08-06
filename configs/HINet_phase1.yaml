@@ -1,0 +1,35 @@
+network:
+  name: "hinet"
+  depth: 4
+
+mode: 'train'
+epochs: 100
+batch_size: 1
+num_workers: 0
+seed: 41
+
+data:
+  source: # postprocessing 데이터셋이 없을 경우 메인모델(pix2pix)를 불러와 추론을 진행하여 데이터셋을 구축
+    config: './configs/Pix2Pix.yaml' # 메인모델 config 파일 경로
+    checkpoint: './checkpoints/pix2pix/ckpt_best_pix2pix.pth' # 메인모델 파일 경로
+  dir: '/content/data/' # '/content/hinet_data/train_input_img', '/content/hinet_data/train_label_img'
+  meta: './configs/train_meta.csv' # 학습에 
+  valid_type: 1 # 20 images similar to test images
+  full_train: True
+
+optimizer:
+  name: 'Adam'
+  lr: 1e-4
+
+scheduler:
+  name: 'ReduceLROnPlateau'
+  mode: f'max'
+  factor: 0.5
+  patience: 2
+  threshold_mode: f'abs'
+  min_lr: 1e-8
+  verbose: True
+
+checkpoint:
+  load_path: None
+  save_dir: ./checkpoints/hinet/

@@ -26,7 +26,7 @@ from data import (
 )
 
 
-def train(args):
+def train(args, phase: int=1):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print_system_envs()
     set_seed(args.seed)
@@ -75,19 +75,45 @@ def train(args):
     scheduler = get_scheduler(args, optimizer)
     criterion = HINetLoss().to(device)
 
+    # load model
     start_epoch = 0
-    if args.checkpoint.load_path is not None:
+    if phase == 1 and args.checkpoint.load_path is not None: # input: original input / label: original label
         ckpt = torch.load(args.checkpoint.load_path)
-        start_epoch = ckpt["epoch"] + 1
-        model.load_state_dict(ckpt["model"])
-        optimizer.load_state_dict(ckpt["optimizer"])
-        scheduler.load_state_dict(ckpt["scheduler"])
-        print(
-            f"[+] Checkpoint\n",
-            f"'{args.checkpoint.load_path}' loaded\n",
-            f"Resume from epoch {start_epoch}\n",
-        )
+        try:
+            start_epoch = ckpt["epoch"] + 1
+            model.load_state_dict(ckpt["model"])
+            optimizer.load_state_dict(ckpt["optimizer"])
+            scheduler.load_state_dict(ckpt["scheduler"])
+            print(
+                f"[+] Checkpoint\n",
+                f"'{args.checkpoint.load_path}' loaded\n",
+                f"Resume from epoch {start_epoch}\n",
+            )
+        except:
+            model.load_state_dict(ckpt)
 
+    elif phase == 2 and args.checkpoint.load_path is not None: # input: pix2pix input / label: original label
+        ckpt = torch.load(args.checkpoint.load_path)
+        try:
+            start_epoch = ckpt["epoch"] + 1 if 'phase1' not in args.checkpoint.load_path else start_epoch
+            model.load_state_dict(ckpt["model"])
+            optimizer.load_state_dict(ckpt["optimizer"])
+            scheduler.load_state_dict(ckpt["scheduler"])
+            if 'phase1' in args.checkpoint.load_path:
+                print(
+                    f"[+] Checkpoint\n",
+                    f"'{args.checkpoint.load_path}' loaded\n",
+                    )
+            else:
+                print(
+                    f"[+] Checkpoint\n",
+                    f"'{args.checkpoint.load_path}' loaded\n",
+                    f"Resume from epoch {start_epoch}\n",
+                )
+        except:
+            model.load_state_dict(ckpt)
+
+    # start train
     scaler = GradScaler()
     best_score = 0
     for epoch in range(start_epoch, args.epochs):
@@ -121,6 +147,7 @@ def train(args):
 
         scheduler.step(valid_psnr)
 
+        # save best model
         if best_score < valid_psnr:
             best_score = valid_psnr
             ckpt = dict(
@@ -130,7 +157,7 @@ def train(args):
                 scheduler=scheduler.state_dict(),
             )
             ckpt_save_path = os.path.join(
-                args.checkpoint.save_dir, f"ckpt_best_hinet.pth"
+                args.checkpoint.save_dir, f"ckpt_best_hinet_phase{phase}.pth"
             )
             torch.save(ckpt, ckpt_save_path)
             print(

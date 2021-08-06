@@ -7,7 +7,6 @@ def conv3x3(in_chn, out_chn, bias=True):
     layer = nn.Conv2d(in_chn, out_chn, kernel_size=3, stride=1, padding=1, bias=bias)
     return layer
 
-
 def conv_down(in_chn, out_chn, bias=False):
     layer = nn.Conv2d(in_chn, out_chn, kernel_size=4, stride=2, padding=1, bias=bias)
     return layer
@@ -22,7 +21,6 @@ def conv(in_channels, out_channels, kernel_size, bias=False, stride=1):
         bias=bias,
         stride=stride,
     )
-
 
 class SAM(nn.Module):
     def __init__(self, n_feat, kernel_size=3, bias=True):
@@ -238,20 +236,3 @@ class skip_blocks(nn.Module):
         for m in self.blocks:
             x = m(x)
         return x + sc
-
-
-if __name__ == "__main__":
-    from utils import print_gpu_status
-    from torch.cuda.amp import autocast, GradScaler
-
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = HINet(depth=4)
-    model.to(device)
-
-    print_gpu_status()
-
-    sample = torch.rand(1, 3, 1224, 1632)
-    print_gpu_status()
-
-    with autocast():
-        model(sample.to(device))

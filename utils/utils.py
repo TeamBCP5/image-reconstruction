@@ -1,6 +1,7 @@
 import os
 import gc
 from glob import glob
+from tqdm import tqdm
 from psutil import virtual_memory
 import zipfile
 import random
@@ -10,15 +11,17 @@ import torch
 from torch import nn
 import segmentation_models_pytorch as smp
 from importlib import import_module
-from networks import HINet, define_D
+from networks import HINet, define_D, Unet
 
 
 def get_model(args, mode="train") -> nn.Module:
     if args.network.name == "pix2pix":
         if mode == "train":
             config_G = args.network.generator._asdict()  # encoder_name, ...
+            config_G.pop('classes')
             config_D = args.network.discriminator._asdict()  # ndf, ...
-            G_model = smp.Unet(**config_G)
+            # G_model = smp.Unet(**config_G)
+            G_model = Unet(**config_G)
             G_model.segmentation_head[2] = nn.Tanh()
             D_model = define_D(**config_D)
             return G_model, D_model
@@ -27,6 +30,7 @@ def get_model(args, mode="train") -> nn.Module:
             config_G = args.network.generator._asdict()  # encoder_name, ...
             config_G["encoder_weights"] = None
             G_model = smp.Unet(**config_G)
+            G_model.segmentation_head[2] = nn.Tanh()
             return G_model
 
     elif args.network.name == "hinet":
@@ -80,7 +84,7 @@ def remove_all_files_in_dir(dir):
 
 def save_samples(result, save_dir="./submission/"):
     with zipfile.ZipFile(os.path.join(save_dir, "submission.zip"), "w") as img_out:
-        for i, image in enumerate(result):
+        for i, image in tqdm(enumerate(result), desc="[Compression]"):
             image = cv2.imencode(".png", image)[1]
             img_out.writestr(f"test_{20000+i}.png", image)
 
@@ -128,31 +132,37 @@ def print_system_envs():
         f"GPU Memory Size : {gpu_mem_size:.4f} GB\n",
     )
 
-def init_net(net, init_type='kaiming', init_gain=0.02):
+
+def init_net(net, init_type="kaiming", init_gain=0.02):
     init_weights(net, init_type, gain=init_gain)
     return net
 
-def init_weights(net, init_type='kaiming', gain=0.02):
+
+def init_weights(net, init_type="kaiming", gain=0.02):
     def init_func(m):
         classname = m.__class__.__name__
-        if hasattr(m, 'weight') and (classname.find('conv') != -1 or classname.find('Linear') != -1):
-            if init_type == 'normal':
+        if hasattr(m, "weight") and (
+            classname.find("conv") != -1 or classname.find("Linear") != -1
+        ):
+            if init_type == "normal":
                 nn.init.normal_(m.weight.data, 0.0, gain)
-            elif init_type == 'xavier':
+            elif init_type == "xavier":
                 nn.init.xavier_normal_(m.weight.data, gain=gain)
-            elif init_type == 'kaiming':
-                nn.init.kaiming_normal_(m.weight.data, a=0, mode='fan_in')
-            elif init_type == 'orthogonal':
+            elif init_type == "kaiming":
+                nn.init.kaiming_normal_(m.weight.data, a=0, mode="fan_in")
+            elif init_type == "orthogonal":
                 nn.init.orthogonal_(m.weight.data, gain=gain)
             else:
-                raise NotImplementedError('initialization method [%s] is not implemented' % init_type)
-            if hasattr(m, 'bias') and m.bias is not None:
+                raise NotImplementedError(
+                    "initialization method [%s] is not implemented" % init_type
+                )
+            if hasattr(m, "bias") and m.bias is not None:
                 nn.init.constant_(m.bias.data, 0.0)
-        elif classname.find('BatchNorm2d') != -1:
+        elif classname.find("BatchNorm2d") != -1:
             nn.init.normal_(m.weight.data, 1.0, gain)
             nn.init.constant_(m.bias.data, 0.0)
 
-    print('initialize network with %s' % init_type)
+    print("initialize network with %s" % init_type)
     net.apply(init_func)
 
 
@@ -162,3 +172,8 @@ def truncate_aligned_model(model: nn.Module) -> None:
     gc.collect()
     torch.cuda.empty_cache()
 
+def print_arguments(args):
+    print("=" * 100)
+    print(args)
+    print("=" * 100)
+    print()

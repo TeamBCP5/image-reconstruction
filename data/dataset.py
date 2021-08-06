@@ -7,7 +7,8 @@ import numpy as np
 import pandas as pd
 import cv2
 import torch
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, DataLoader
+from torch.cuda.amp import autocast
 import albumentations as A
 import rasterio
 from rasterio.windows import Window
@@ -51,6 +52,11 @@ def train_valid_split(
     )
     meta["label_img"] = meta["label_img"].apply(
         lambda x: os.path.join(data_dir, "train_label_img", x)
+    )
+
+    # filter image which is exist
+    meta = meta.loc[meta["input_img"].apply(lambda x: os.path.isfile(x))].reset_index(
+        drop=True
     )
 
     # split train & valid
@@ -162,10 +168,22 @@ class HINetDataset(Dataset):
         return len(self.input_paths)
 
 
-class EvalDataset(Dataset):
-    def __init__(self, img_path, patch_size=512, stride=256, transforms=None):
-        self.data = rasterio.open(img_path, num_threads="all_cpus")
-        self.shape = self.data.shape
+class CutImageDataset(Dataset):
+    def __init__(
+        self,
+        img_path: str,
+        label_path: str = None,
+        patch_size: int = 512,
+        stride: int = 256,
+        transforms=None,
+    ):
+        self.image = rasterio.open(img_path, num_threads="all_cpus")
+        self.label = (
+            rasterio.open(label_path, num_threads="all_cpus")
+            if label_path is not None
+            else None
+        )
+        self.shape = self.image.shape
         self.slices = self.make_grid(self.shape, patch_size, stride)
         self.transforms = transforms
 
@@ -174,55 +192,24 @@ class EvalDataset(Dataset):
 
     def __getitem__(self, index):
         x1, x2, y1, y2 = self.slices[index]
-        image = self.data.read([1, 2, 3], window=Window.from_slices((x1, x2), (y1, y2)))
-        image = np.moveaxis(image, 0, -1)
-        image = self.transforms(image=image)["image"]
-
-        return image, (x1, x2, y1, y2)
-
-    @staticmethod
-    def make_grid(shape, patch_size=512, stride=256):
-        x, y = shape
-        nx = x // stride + 1
-        ny = y // stride + 1
-        slices = []
-        x1 = 0
-        for i in range(nx):
-            x2 = min(x1 + patch_size, x)
-            y1 = 0
-            for j in range(ny):
-                y2 = min(y1 + patch_size, y)
-                if x2 - x1 != patch_size:
-                    x1 = x2 - patch_size
-                if y2 - y1 != patch_size:
-                    y1 = y2 - patch_size
-                slices.append([x1, x2, y1, y2])
-                y1 += stride
-            x1 += stride
-        slices = np.array(slices)
-        return slices.reshape(-1, 4)
-
-
-class CutImageDataset(Dataset):
-    def __init__(self, img_path, label_path, patch_size=512, stride=256):
-        self.data = rasterio.open(img_path, num_threads="all_cpus")
-        self.label = rasterio.open(label_path, num_threads="all_cpus")
-        self.shape = self.data.shape
-        self.slices = self.make_grid(self.shape, patch_size, stride)
-
-    def __len__(self):
-        return len(self.slices)
-
-    def __getitem__(self, index):
-        x1, x2, y1, y2 = self.slices[index]
-        image = self.data.read([1, 2, 3], window=Window.from_slices((x1, x2), (y1, y2)))
-        image = np.moveaxis(image, 0, -1)
-        label = self.label.read(
+        image = self.image.read(
             [1, 2, 3], window=Window.from_slices((x1, x2), (y1, y2))
         )
-        label = np.moveaxis(label, 0, -1)
+        image = np.moveaxis(image, 0, -1)
 
-        return image, label
+        # used when preprocessing data for train pix2pix
+        if self.label is not None:
+            label = self.label.read(
+                [1, 2, 3], window=Window.from_slices((x1, x2), (y1, y2))
+            )
+            label = np.moveaxis(label, 0, -1)
+            return image, label
+
+        # used for inference using pix2pix
+        if self.transforms is not None:
+            image = self.transforms(image=image)["image"]
+
+        return image, (x1, x2, y1, y2)
 
     @staticmethod
     def make_grid(shape, patch_size=512, stride=256):
@@ -246,7 +233,6 @@ class CutImageDataset(Dataset):
         slices = np.array(slices)
         return slices.reshape(-1, 4)
 
-
 def compose_postprocessing_dataset(args, device):
     input_save_dir = os.path.join(args.data.dir, "train_input_img")
     label_save_dir = os.path.join(args.data.dir, "train_label_img")
@@ -256,19 +242,33 @@ def compose_postprocessing_dataset(args, device):
     if len(os.listdir(input_save_dir)) != 0 and len(os.listdir(input_save_dir)) == len(
         os.listdir(label_save_dir)
     ):
+        if len(os.listdir(input_save_dir)) < 622:
+            import warnings
+            warnings.warn(f"""
+            The size of dataset is lower than 622, the original number of given train data.
+            It's because you might stop process composing postprocessing dataset process.
+            Train will be progressed without error, but if you want to train postprocessor with full dataset,
+            remove all data in '{input_save_dir}' and '{label_save_dir}'
+            """)
         return
 
     print(
         f"[+] Compose postprocessing dataset\n",
-        "There's no dataset to train postprocessor.\n",
-        "Start composing dataset using main model(pix2pix).\n",
+        "There's no train dataset to for postprocessor(HINet).\n",
+        "Start composing dataset using main model(Pix2Pix).\n",
         f"Input images will be saved in '{input_save_dir}'.\n",
         f"Label images will be saved in '{label_save_dir}'.\n",
     )
     src_args = Flags(args.data.source.config).get()
-    stride, patch_size = src_args.data.stride, src_args.data.patch_size
+    stride = src_args.data.stride
+    patch_size = src_args.data.patch_size
+    batch_size = 32
+
     G_model = get_model(src_args, mode="test")
-    ckpt = torch.load(args.data.source.checkpoint)["G_model"]
+    try:
+        ckpt = torch.load(args.data.source.checkpoint)["G_model"]
+    except:
+        ckpt = torch.load(args.data.source.checkpoint)
     G_model.load_state_dict(ckpt)
     G_model.to(device)
     G_model.eval()
@@ -276,124 +276,35 @@ def compose_postprocessing_dataset(args, device):
 
     train_input_paths = sorted(
         glob(os.path.join(src_args.data.dir, "train_input_img", "*"))
-    )[:10]
+    )
     train_label_paths = sorted(
         glob(os.path.join(src_args.data.dir, "train_label_img", "*"))
-    )[:10]
+    )
 
     transforms = get_valid_transform(src_args.network.name)
-
     with torch.no_grad():
         for img_path, lbl_path in tqdm(
             zip(train_input_paths, train_label_paths), desc="[Compose Dataset]"
         ):
-            img = cv2.imread(img_path)
-            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-            img = transforms(image=img)["image"]
-
-            crop = []
-            position = []
-
-            result_img = np.zeros_like(img.numpy().transpose(1, 2, 0))
-            voting_mask = np.zeros_like(img.numpy().transpose(1, 2, 0))
-
-            img = img.unsqueeze(0).float()
-            for top in range(0, img.shape[2], stride):
-                for left in range(0, img.shape[3], stride):
-                    if (
-                        top + patch_size > img.shape[2]
-                        or left + patch_size > img.shape[3]
-                    ):
-                        continue
-                    piece = torch.zeros([1, 3, patch_size, patch_size])
-                    temp = img[:, :, top : top + patch_size, left : left + patch_size]
-                    piece[:, :, : temp.shape[2], : temp.shape[3]] = temp
-
-                    pred = G_model(piece.to(device))
-                    pred = pred[0].cpu().clone().detach().numpy()
-                    pred = pred.transpose(1, 2, 0)
-                    pred = pred * 127.5 + 127.5
-
-                    crop.append(pred)
-                    position.append([top, left])
-
-            # 가장 자리 1
-            for left in range(0, img.shape[3], stride):
-                if left + patch_size > img.shape[3]:
-                    continue
-                piece = torch.zeros([1, 3, patch_size, patch_size])
-                temp = img[
-                    :,
-                    :,
-                    img.shape[2] - patch_size : img.shape[2],
-                    left : left + patch_size,
-                ]
-                piece[:, :, : temp.shape[2], : temp.shape[3]] = temp
-
-                pred = G_model(piece.to(device))
-                pred = pred[0].cpu().clone().detach().numpy()
-                pred = pred.transpose(1, 2, 0)
+            ds = CutImageDataset(img_path, patch_size=patch_size, stride=stride, transforms=transforms)
+            dl = DataLoader(ds, batch_size=batch_size, shuffle=False, drop_last=False)
+            # main light scattering reduction(pix2pix)
+            preds = torch.zeros(3, ds.shape[0], ds.shape[1]).to(device)
+            votes = torch.zeros(3, ds.shape[0], ds.shape[1]).to(device)
+            for images, (x1, x2, y1, y2) in dl:
+                pred = G_model(images.to(device).float())
                 pred = pred * 127.5 + 127.5
-
-                crop.append(pred)
-                position.append([img.shape[2] - patch_size, left])
-
-            # 가장 자리 2
-            for top in range(0, img.shape[2], stride):
-                if top + patch_size > img.shape[2]:
-                    continue
-                piece = torch.zeros([1, 3, patch_size, patch_size])
-                temp = img[
-                    :,
-                    :,
-                    top : top + patch_size,
-                    img.shape[3] - patch_size : img.shape[3],
-                ]
-                piece[:, :, : temp.shape[2], : temp.shape[3]] = temp
-
-                pred = G_model(piece.to(device))
-                pred = pred[0].cpu().clone().detach().numpy()
-                pred = pred.transpose(1, 2, 0)
-                pred = pred * 127.5 + 127.5
-
-                crop.append(pred)
-                position.append([top, img.shape[3] - patch_size])
-
-            # 오른쪽 아래
-            piece = torch.zeros([1, 3, patch_size, patch_size])
-            temp = img[
-                :,
-                :,
-                img.shape[2] - patch_size : img.shape[2],
-                img.shape[3] - patch_size : img.shape[3],
-            ]
-            piece[:, :, : temp.shape[2], : temp.shape[3]] = temp
-
-            pred = G_model(piece.to(device))
-            pred = pred[0].cpu().clone().detach().numpy()
-            pred = pred.transpose(1, 2, 0)  # H, W, C
-            pred = pred * 127.5 + 127.5
-
-            crop.append(pred)
-            position.append([img.shape[2] - patch_size, img.shape[3] - patch_size])
-
-            # 취합
-            crop = np.array(crop).astype(np.float32)
-            for num, (t, l) in enumerate(position):
-                piece = crop[num]
-                h, w, c = result_img[t : t + patch_size, l : l + patch_size, :].shape
-                result_img[t : t + patch_size, l : l + patch_size, :] += piece[
-                    :h, :w, :
-                ]
-                voting_mask[t : t + patch_size, l : l + patch_size, :] += 1
-
-            result_img = result_img / voting_mask
-            result_img = result_img.astype(np.uint8)
-            result_img = cv2.cvtColor(result_img, cv2.COLOR_RGB2BGR)
+                for i in range(len(x1)):
+                    preds[:, x1[i] : x2[i], y1[i] : y2[i]] += pred[i]
+                    votes[:, x1[i] : x2[i], y1[i] : y2[i]] += 1
+            preds /= votes
+            preds = preds.cpu().detach().numpy().astype(np.uint8)
+            preds = preds.transpose(1, 2, 0)
+            preds = cv2.cvtColor(preds, cv2.COLOR_RGB2BGR)
 
             # save input images
             img_name = os.path.basename(img_path)
-            cv2.imwrite(os.path.join(input_save_dir, img_name), result_img)
+            cv2.imwrite(os.path.join(input_save_dir, img_name), preds)
 
             # save label images
             lbl_name = os.path.basename(lbl_path)

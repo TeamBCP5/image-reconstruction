@@ -5,118 +5,17 @@ from typing import List
 import numpy as np
 import cv2
 from utils import remove_all_files_in_dir
-
-# import CutImageDataset
-from data.dataset import CutImageDataset
+from data import CutImageDataset
 
 
 def cut_img(
-    img_path_list: List[str],
-    save_dir: str,
-    stride: int = 256,
-    patch_size: int = 512,
-    multiscale: bool = False,
-    denoise: str = False,
-    remove_exist: bool = True,
-):
-    save_dir = f"{save_dir}_{patch_size}"
-    os.makedirs(save_dir, exist_ok=True)
-    if remove_exist:
-        remove_all_files_in_dir(save_dir)
-
-    num = 0
-    for path in tqdm(img_path_list, desc="[Cut & Save Images]"):
-        for size_idx in range(2):
-            img = cv2.imread(path)
-
-            # denoise
-            if denoise:
-                img = apply_denoise(img)
-
-            top_size, left_size = img.shape[0], img.shape[1]
-            if size_idx == 1:
-                if multiscale is False:
-                    break
-                top_size, left_size = int(top_size / 2), int(left_size / 2)
-                img = cv2.resize(
-                    img, dsize=(top_size, left_size), interpolation=cv2.INTER_CUBIC
-                )
-
-            for top in range(0, img.shape[0], stride):
-                for left in range(0, img.shape[1], stride):
-                    if (
-                        top + patch_size > img.shape[0]
-                        or left + patch_size > img.shape[1]
-                    ):
-                        continue
-                    piece = np.zeros((patch_size, patch_size, 3), dtype=np.uint8)
-                    temp = img[top : top + patch_size, left : left + patch_size, :]
-                    piece[: temp.shape[0], : temp.shape[1], :] = temp
-
-                    # save png
-                    png_save_path = os.path.join(save_dir, f"{num}.png")
-                    cv2.imwrite(png_save_path, piece)
-                    num += 1
-
-            # 가장 자리 1
-            for left in range(0, img.shape[1], stride):
-                if left + patch_size > img.shape[1]:
-                    continue
-                piece = np.zeros((patch_size, patch_size, 3), np.uint8)
-                temp = img[
-                    img.shape[0] - patch_size : img.shape[0],
-                    left : left + patch_size,
-                    :,
-                ]
-                piece[: temp.shape[0], : temp.shape[1], :] = temp
-
-                # save png
-                png_save_path = os.path.join(save_dir, f"{num}.png")
-                cv2.imwrite(png_save_path, piece)
-                num += 1
-
-            # 가장 자리 2
-            for top in range(0, img.shape[0], stride):
-                if top + patch_size > img.shape[0]:
-                    continue
-                piece = np.zeros([patch_size, patch_size, 3], np.uint8)
-                temp = img[
-                    top : top + patch_size, img.shape[1] - patch_size : img.shape[1], :
-                ]
-                piece[: temp.shape[0], : temp.shape[1], :] = temp
-
-                # save png
-                png_save_path = os.path.join(save_dir, f"{num}.png")
-                cv2.imwrite(png_save_path, piece)
-                num += 1
-
-            # 오른쪽 아래
-            piece = np.zeros([patch_size, patch_size, 3], np.uint8)
-            temp = img[
-                img.shape[0] - patch_size : img.shape[0],
-                img.shape[1] - patch_size : img.shape[1],
-                :,
-            ]
-            piece[: temp.shape[0], : temp.shape[1], :] = temp
-
-            # save png
-            png_save_path = os.path.join(save_dir, f"{num}.png")
-            cv2.imwrite(png_save_path, piece)
-            num += 1
-
-    return num
-
-
-def cut_img_verJY(
     img_path_list: List[str],
     label_path_list: List[str],
     save_dir: str,
     stride: int = 256,
     patch_size: int = 512,
-    multiscale: bool = False,
     denoise: str = False,
-    remove_exist: bool = True,
-):
+) -> None:
     # save directory 생성
     input_save_dir = os.path.join(save_dir, f"train_input_img_{patch_size}")
     label_save_dir = os.path.join(save_dir, f"train_label_img_{patch_size}")
@@ -137,8 +36,12 @@ def cut_img_verJY(
         label_name = os.path.basename(label_path).split(".png")[0]
 
         for idx in range(len(ds)):
-            # Dataset으로부터 잘려진 이미지 load
-            image, label = ds[idx]
+            image, label = ds[idx]  # Dataset으로부터 잘려진 이미지 load
+
+            if denoise:
+                image = apply_denoise(image)
+                label = apply_denoise(label)
+
             # 이미지 저장
             image_save_path = os.path.join(input_save_dir, f"{img_name}_{idx:0>3d}.png")
             label_save_path = os.path.join(
@@ -146,13 +49,9 @@ def cut_img_verJY(
             )
             cv2.imwrite(image_save_path, cv2.cvtColor(image, cv2.COLOR_RGB2BGR))
             cv2.imwrite(label_save_path, cv2.cvtColor(label, cv2.COLOR_RGB2BGR))
-            # image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
-            # label = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
-            # cv2.imwrite(image_save_path, image)
-            # cv2.imwrite(label_save_path, label)
 
 
-def apply_naive_denoise(src):
+def apply_naive_denoise(src: np.array) -> np.array:
     input_per_channel = [deepcopy(src[:, :, i]) for i in range(3)]
     blur_per_channel = []
     for idx in range(3):
@@ -163,9 +62,7 @@ def apply_naive_denoise(src):
     return img
 
 
-def apply_denoise(
-    src: np.array, threshold: int = 30
-) -> np.array:  # NOTE. now for BGR(or RGB) channel image
+def apply_denoise(src: np.array, threshold: int = 30) -> np.array:
     """
     input 이미지의 노이즈를 제거. 3264x2448 기준 약 70ms 소요
     Process:

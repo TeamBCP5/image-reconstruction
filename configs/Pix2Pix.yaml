@@ -22,7 +22,6 @@ data:
   full_train: True
   stride: 256
   patch_size: 512
-  multiscale: False
   denoise: False
 
 optimizer:
@@ -40,5 +39,5 @@ scheduler:
 
 checkpoint:
   load_path: None
-  save_dir: ./checkpoints/
+  save_dir: ./checkpoints/pix2pix/
 
