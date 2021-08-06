@@ -51,6 +51,7 @@ def get_train_transform(transform_type: str = "pix2pix") -> A.Compose:
             [
                 A.Resize(1224, 1632),
                 A.HorizontalFlip(p=0.5),
+                A.ChannelShuffle(p=0.5),
                 ToTensorV2(p=1.0),
             ],
             additional_targets={"label": "image"},

@@ -149,7 +149,7 @@ class HINetDataset(Dataset):
             return image, label
 
         elif self.mode == "valid":
-            image = A.GaussNoise(var_limit=5)(image=image)["image"]
+            
             image = self.transforms(image=image)["image"]
             image = image / 255.0
 
