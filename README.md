@@ -119,7 +119,6 @@ $ pip install -r requirements.txt
 
 - 후처리 모델(HINet)을 주어진 데이터를 활용하여 1차적으로 학습합니다.
 - ***Input***. 대회에서 주어진 학습 데이터의 input 이미지
-
 - ***Label***. 대회에서 주어진 학습 데이터의 label 이미지
 
 #### III. 후처리 모델(HINet) 2차 학습
