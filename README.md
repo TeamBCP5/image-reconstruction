@@ -111,15 +111,18 @@ $ pip install -r requirements.txt
 
 #### I. 메인 모델(Pix2Pix) 학습
 
+- Sliding Window 방법을 바탕으로 이미지 품질을 향상시키는 메인 모델(Pix2Pix)을 학습합니다.
 - ***Input***. 대회에서 주어진 학습 데이터의 input 이미지
 - ***Label***. 대회에서 주어진 학습 데이터의 label 이미지
 
 #### II. 후처리 모델(HINet) 1차 학습
 
+- 후처리 모델(HINet)을 주어진 데이터를 활용하여 1차적으로 학습합니다.
 - ***Input***. 대회에서 주어진 학습 데이터의 input 이미지
+
 - ***Label***. 대회에서 주어진 학습 데이터의 label 이미지
 
-#### III. 후처리 모델 2차 학습
+#### III. 후처리 모델(HINet) 2차 학습
 
 - II에서 학습한 후처리 모델(HINet)을 불러와 학습을 진행합니다.
 - ***Input***. 대회에서 주어진 학습 데이터의 input 이미지에 대한 I에서 학습한 메인 모델(Pix2Pix)의 추론 결과
