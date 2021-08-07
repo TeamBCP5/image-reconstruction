@@ -13,7 +13,7 @@ data:
     config: './configs/Pix2Pix.yaml' # 메인모델 config 파일 경로
     checkpoint: './checkpoints/pix2pix/pix2pix.pth' # 메인모델 파일 경로
   dir: '/content/data/hinet_dataset' # '/content/data/train_input_img', '/content/data/train_label_img'
-  meta: './configs/train_meta.csv' # 학습에 
+  meta: './configs/train_meta.csv'
   valid_type: 1 # 20 images similar to test images
   full_train: True
 
