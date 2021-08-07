@@ -129,7 +129,7 @@ $ pip install -r requirements.txt
 
 
 
-#### Train All Pipeline
+### Train All Pipeline
 
 위 학습 단계를 모두 포함한 학습을 수행합니다.
 
@@ -137,7 +137,7 @@ $ pip install -r requirements.txt
 $ python train.py --train_type 'all'
 ```
 
-#### Train Pix2Pix in single
+### Train Pix2Pix in single
 
 단계 I에 해당되는 Pix2Pix 모델 학습을 수행합니다.
 
@@ -145,7 +145,7 @@ $ python train.py --train_type 'all'
 $ python train.py --train_type 'pix2pix'
 ```
 
-#### Train HINet in single
+### Train HINet in single
 
 단계 II에 해당되는 HINet 모델 학습을 수행합니다.
 
@@ -155,7 +155,7 @@ $ python train.py --train_type 'hinet'
 
 
 
-#### Arguments
+### Arguments
 
 `train_type`: 학습 방식 설정
 
@@ -190,7 +190,7 @@ $ python inference.py --checkpoint_main "./checkpoints/pix2pix/pix2pix.pth" --ch
 
 
 
-#### Arguments
+### Arguments
 
 `config_main`: Main 모델(Pix2Pix) config 파일 경로
 
