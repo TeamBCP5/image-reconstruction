@@ -91,7 +91,7 @@ $ pip install -r requirements.txt
 
 ## Configurations
 
-모델 학습과 추론은 기본적으로 [**모델별 Configuration 파일**](https://github.com/TeamBCP5/image-reconstruction/tree/main/configs)을 바탕으로 진행됩니다. 각 Configuration 파일에는 모델 구조와 학습 데이터셋 경로 등 학습과 추론을 위한 설정값이 기록되어 있습니다. 원활한 학습/추론을 위해 데이터셋 경로 등 설정값을 환경에 맞게 설정해주세요. Configuration 파일에 대한 명세는 [**이곳**](https://github.com/TeamBCP5/image-reconstruction/blob/main/Configurations.md)에서 확인하실 수 있습니다.
+모델 학습과 추론은 기본적으로 [**모델별 Configuration 파일**](https://github.com/TeamBCP5/image-reconstruction/tree/main/configs)을 바탕으로 진행됩니다. 각 Configuration 파일에는 모델 구조와 학습 데이터셋 경로 등 학습과 추론을 위한 설정값이 기록되어 있습니다. 원활한 학습/추론을 위해 데이터셋 경로 등 설정값을 환경에 맞게 설정해주세요. Configuration 파일 명세는 [**이곳**](https://github.com/TeamBCP5/image-reconstruction/blob/main/Configurations.md)에서 확인하실 수 있습니다.
 
 
 
@@ -119,27 +119,27 @@ $ pip install -r requirements.txt
 
 #### Train All Pipeline
 
+위 학습 단계를 모두 포함한 학습을 수행합니다.
+
 ```shell
 $ python train.py --train_type 'all'
 ```
 
-- 위 학습 단계를 모두 포함한 학습을 수행합니다.
-
 #### Train Pix2Pix in single
+
+단계 I에 해당되는 Pix2Pix 모델 학습을 수행합니다.
 
 ```shell
 $ python train.py --train_type 'pix2pix'
 ```
 
-- 단계 I에 해당되는 Pix2Pix 모델 학습을 수행합니다.
-
 #### Train HINet in single
+
+단계 II에 해당되는 HINet 모델 학습을 수행합니다.
 
 ```shell
 $ python train.py --train_type 'hinet'
 ```
-
-- 단계 II에 해당되는 HINet 모델 학습을 수행합니다.
 
 
 
@@ -148,7 +148,7 @@ $ python train.py --train_type 'hinet'
 `train_type`: 학습 방식 설정
 
 - `'all'`: 위 세 단계에 걸친 학습을 진행합니다. 최종 결과물 재현에는 이 설정값을 사용됩니다.
-- `pix2pix`: Pix2Pix 모델의 개별 학습을 수행합니다.
+- `'pix2pix'`: Pix2Pix 모델의 개별 학습을 수행합니다.
 - `'hinet'`: HINet 모델의 개별 학습을 수행합니다. '단계 II. 후처리 모델(HINet) 1차 학습'을 기준으로 학습이 진행됩니다.
 
 `config_pix2pix`: Pix2Pix 모델 configuration 파일 경로
@@ -161,11 +161,11 @@ $ python train.py --train_type 'hinet'
 
 ## Inference
 
+메인 모델(Pix2Pix)과 후처리 모델(HINet)을 불러와 추론을 수행합니다. 추론은 다음의 두 단계를 거쳐 진행됩니다.
+
 ```shell
 $ python inference.py --checkpoint_main "./checkpoints/pix2pix/pix2pix.pth" --checkpoint_post "./checkpoints/hinet/hinet.pth" --image_dir "/content/data/test_input_img"
 ```
-
-메인 모델(Pix2Pix)과 후처리 모델(HINet)을 불러와 추론을 수행합니다. 추론은 다음의 두 단계를 거쳐 진행됩니다.
 
 #### I. 메인 모델(Pix2Pix) 추론
 
@@ -198,3 +198,22 @@ $ python inference.py --checkpoint_main "./checkpoints/pix2pix/pix2pix.pth" --ch
 
 `output_dir`: 추론 결과를 저장할 디렉토리 경로. 해당 디렉토리 내 압축파일 형태로 결과물이 저장됩니다.
 
+
+
+## Augmentations
+
+모델 학습에 활용한 data augmentation의 예시 결과물을 생성합니다.
+
+```shell
+$ python demo_augmentation.py --data_dir "/content/data/" --num_samples 20 --save_dir './augmentation_demo/'
+```
+
+
+
+#### Arguments
+
+`data_dir`: input 데이터 디렉토리 경로
+
+`num_samples`: 생성할 샘플 수
+
+`save_dir`: Augmentation 적용 결과를 저장할 디렉토리 경로
