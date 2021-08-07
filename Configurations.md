@@ -1,6 +1,12 @@
 # Configurations
 
-모델 학습과 추론은 기본적으로 [모델별 Configuration 파일](https://github.com/TeamBCP5/image-reconstruction/tree/main/configs)을 바탕으로 진행됩니다. 각 Configuration 파일에는 모델 구조와 학습 데이터셋 경로 등 학습과 추론을 위한 설정값이 기록되어 있습니다. 원활한 학습/추론을 위해 데이터셋 경로 등 설정값을 환경에 맞게 설정해주세요. 주요 설정값은 다음과 같습니다.
+모델 학습과 추론은 기본적으로 [모델별 Configuration 파일](https://github.com/TeamBCP5/image-reconstruction/tree/main/configs)을 바탕으로 진행됩니다. 각 Configuration 파일에는 모델 구조와 학습 데이터셋 경로 등 학습과 추론을 위한 설정값이 기록되어 있습니다. 원활한 학습/추론을 위해 데이터셋 경로 등 설정값을 환경에 맞게 설정해주세요. 모델별 configuration 파일은 다음에서 확인하실 수 있으며, 주요 설정값은 아래와 같습니다.
+
+- [Pix2Pix Configurations](https://github.com/TeamBCP5/image-reconstruction/blob/main/configs/Pix2Pix.yaml)
+- [HINet Configurations - Phase 1](https://github.com/TeamBCP5/image-reconstruction/blob/main/configs/HINet_phase1.yaml)
+- [HINet Configurations - Phase 2](https://github.com/TeamBCP5/image-reconstruction/blob/main/configs/HINet_phase2.yaml)
+
+---
 
 
 
