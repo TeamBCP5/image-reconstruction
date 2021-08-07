@@ -15,6 +15,10 @@
 
 
 
+---
+
+
+
 ### data. 학습 시 활용할 데이터셋에 대한 설정
 
 `dir`: 학습 데이터 디렉토리 경로
@@ -43,6 +47,10 @@
 
 
 
+---
+
+
+
 ### optimizer. 학습에 활용할 optimizer 설정
 
 `name`: 학습에 활용할 optimizer 이름(Adam, AdamW, ...)
@@ -51,11 +59,19 @@
 
 
 
+---
+
+
+
 ### scheduler. 학습에 활용할 lr scheduler 설정
 
 `name`: 학습에 활용할 learning rate scheduler 이름(ReduceLROnPlateau, ...)
 
 - 이외 argument는 설정한 learning rate scheduler의 arguments에 맞게 설정
+
+
+
+---
 
 
 
