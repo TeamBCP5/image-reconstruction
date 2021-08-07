@@ -86,7 +86,7 @@ $ pip install -r requirements.txt
 
 `name`: 모델명 설정 (`'pix2pix'`, `'hinet'`)
 
-- \*이외 argument는 각 아키텍쳐의 arguments에 맞게 설정
+- 이외 argument는 각 아키텍쳐의 arguments에 맞게 설정
 
 - [Pix2Pix network arguments](https://github.com/TeamBCP5/image-reconstruction/blob/b3b2c3e0fe5e57215894897fa13ffd17866d2fa3/configs/Pix2Pix.yaml#L1) 
 - [HINet network arguments](https://github.com/TeamBCP5/image-reconstruction/blob/b3b2c3e0fe5e57215894897fa13ffd17866d2fa3/configs/HINet_phase1.yaml#L1)
@@ -95,25 +95,25 @@ $ pip install -r requirements.txt
 
 ### data: 학습 시 활용할 데이터셋에 대한 설정
 
-##### `dir`: 학습 데이터 디렉토리 경로
+`dir`: 학습 데이터 디렉토리 경로
 
 - `train_input_img(input 디렉토리)`, `train_label_img(label 디렉토리)` 하위 디렉토리를 포함해야 함
 
-##### `meta`: 학습/검증 데이터 분리에 활용할 [메타 데이터](https://github.com/TeamBCP5/image-reconstruction/blob/main/configs/train_meta.csv) 경로
+`meta`: 학습/검증 데이터 분리에 활용할 [메타 데이터](https://github.com/TeamBCP5/image-reconstruction/blob/main/configs/train_meta.csv) 경로
 
-##### `valid_type`: 검증 전략 설정([타입별 명세 참고](https://github.com/iloveslowfood/image-reconstruction/blob/2b245bbad9421d03b943cda5402aa98ac2864c9e/data/dataset.py#L18))
+`valid_type`: 검증 전략 설정([타입별 명세 참고](https://github.com/iloveslowfood/image-reconstruction/blob/2b245bbad9421d03b943cda5402aa98ac2864c9e/data/dataset.py#L18))
 
-##### `full_train`: 검증 데이터를 학습 데이터에 포함하여 학습을 진행할 지 여부를 설정
+`full_train`: 검증 데이터를 학습 데이터에 포함하여 학습을 진행할 지 여부를 설정
 
-##### `stride (for Pix2Pix)`: sliding window 시 활용할 stride를 설정
+`stride (for Pix2Pix)`: sliding window 시 활용할 stride를 설정
 
-##### `patch_size (for Pix2Pix)`: sliding window 시 각 patch의 크기를 설정
+`patch_size (for Pix2Pix)`: sliding window 시 각 patch의 크기를 설정
 
-##### `denoise (for pix2pix)`: 디노이징 적용 여부 설정
+`denoise (for pix2pix)`: 디노이징 적용 여부 설정
 
-##### `source (for HINet)`: HINet 모델 학습을 위한 후처리 데이터셋이 갖춰져 있지 않을 경우 메인모델(pix2pix)를 불러와 추론을 수행, 데이터를 구축하기 위한 설정
+`source (for HINet)`: HINet 모델 학습을 위한 데이터셋이 갖춰져 있지 않을 경우 메인모델(pix2pix)를 불러와 추론을 수행, 데이터를 구축하기 위한 설정
 
-- \*후처리 데이터셋
+- 후처리 데이터셋?
   - *Input*. 대회에서 주어진 학습 데이터의 input 이미지에 대한 I에서 학습한 메인 모델(Pix2Pix)의 추론 결과
   - *Label*. 대회에서 주어진 학습 데이터의 label 이미지
 - `config`: 후처리 데이터셋 구축에 활용할 메인모델(Pix2Pix)의 config 파일 경로
@@ -195,17 +195,17 @@ $ python train.py --train_type 'hinet'
 
 #### Arguments
 
-##### `train_type`: 학습 방식 설정
+`train_type`: 학습 방식 설정
 
 - `'all'`: 위 세 단계에 걸친 학습을 진행합니다. 최종 결과물 재현에는 이 설정값을 사용됩니다.
 - `pix2pix`: Pix2Pix 모델의 개별 학습을 수행합니다.
 - `'hinet'`: HINet 모델의 개별 학습을 수행합니다. '단계 II. 후처리 모델(HINet) 1차 학습'을 기준으로 학습이 진행됩니다.
 
-##### `config_pix2pix`: Pix2Pix 모델 configuration 파일 경로
+`config_pix2pix`: Pix2Pix 모델 configuration 파일 경로
 
-##### `config_hinet_phase1`: HINet 모델(phase1) configuration 파일 경로
+`config_hinet_phase1`: HINet 모델(phase1) configuration 파일 경로
 
-##### `config_hinet_phase2`: HINet 모델(phase2) configuration 파일 경로
+`config_hinet_phase2`: HINet 모델(phase2) configuration 파일 경로
 
 
 
