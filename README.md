@@ -56,8 +56,9 @@ $ pip install -r requirements.txt
 ## Data Structure
 
 ```shell
+# Download: https://dacon.io/competitions/official/235746/data
 [dataset]/
-├── train_input_img/
+├── train_input_img/ # 학습 데이터 입력 이미지
 ├── train_label_img/
 └── test_input_img/
 ```
@@ -90,7 +91,7 @@ $ pip install -r requirements.txt
 
 ## Configurations
 
-모델 학습과 추론은 기본적으로 [모델별 Configuration 파일](https://github.com/TeamBCP5/image-reconstruction/tree/main/configs)을 바탕으로 진행됩니다. 각 Configuration 파일에는 모델 구조와 학습 데이터셋 경로 등 학습과 추론을 위한 설정값이 기록되어 있습니다. 원활한 학습/추론을 위해 데이터셋 경로 등 설정값을 환경에 맞게 설정해주세요. Configuration 파일에 대한 명세는 [이곳](https://github.com/TeamBCP5/image-reconstruction/blob/main/Configurations.md)에서 확인하실 수 있습니다.
+모델 학습과 추론은 기본적으로 [**모델별 Configuration 파일**](https://github.com/TeamBCP5/image-reconstruction/tree/main/configs)을 바탕으로 진행됩니다. 각 Configuration 파일에는 모델 구조와 학습 데이터셋 경로 등 학습과 추론을 위한 설정값이 기록되어 있습니다. 원활한 학습/추론을 위해 데이터셋 경로 등 설정값을 환경에 맞게 설정해주세요. Configuration 파일에 대한 명세는 [**이곳**](https://github.com/TeamBCP5/image-reconstruction/blob/main/Configurations.md)에서 확인하실 수 있습니다.
 
 
 
@@ -98,21 +99,21 @@ $ pip install -r requirements.txt
 
 최종 결과물 제출에 활용된 모델은 다음의 3단계에 걸친 학습을 통해 구축되었습니다. 
 
-##### I. 메인 모델(Pix2Pix) 학습
+#### I. 메인 모델(Pix2Pix) 학습
 
-- *Input*. 대회에서 주어진 학습 데이터의 input 이미지
-- *Label*. 대회에서 주어진 학습 데이터의 label 이미지
+- ***Input***. 대회에서 주어진 학습 데이터의 input 이미지
+- ***Label***. 대회에서 주어진 학습 데이터의 label 이미지
 
-##### II. 후처리 모델(HINet) 1차 학습
+#### II. 후처리 모델(HINet) 1차 학습
 
-- *Input*. 대회에서 주어진 학습 데이터의 input 이미지
-- *Label*. 대회에서 주어진 학습 데이터의 label 이미지
+- ***Input***. 대회에서 주어진 학습 데이터의 input 이미지
+- ***Label***. 대회에서 주어진 학습 데이터의 label 이미지
 
-##### III. 후처리 모델 2차 학습
+#### III. 후처리 모델 2차 학습
 
 - II에서 학습한 후처리 모델(HINet)을 불러와 학습을 진행합니다.
-- *Input*. 대회에서 주어진 학습 데이터의 input 이미지에 대한 I에서 학습한 메인 모델(Pix2Pix)의 추론 결과
-- *Label*. 대회에서 주어진 학습 데이터의 label 이미지
+- ***Input***. 대회에서 주어진 학습 데이터의 input 이미지에 대한 I에서 학습한 메인 모델(Pix2Pix)의 추론 결과
+- ***Label***. 대회에서 주어진 학습 데이터의 label 이미지
 
 
 
@@ -166,34 +167,34 @@ $ python inference.py --checkpoint_main "./checkpoints/pix2pix/pix2pix.pth" --ch
 
 메인 모델(Pix2Pix)과 후처리 모델(HINet)을 불러와 추론을 수행합니다. 추론은 다음의 두 단계를 거쳐 진행됩니다.
 
-##### I. 메인 모델(Pix2Pix) 추론
+#### I. 메인 모델(Pix2Pix) 추론
 
-- Input: 대회에서 주어진 테스트 데이터의 input 이미지
+- ***Input***. 대회에서 주어진 테스트 데이터의 input 이미지
 
-##### II. 후처리 모델(HINet) 1차 학습
+#### II. 후처리 모델(HINet) 1차 학습
 
-- Input: 단계 I에서 메인 모델의 추론 결과
+- ***Input***. 단계 I에서 메인 모델의 추론 결과
 - 해당 단계에서의 결과물이 최종 추론 결과물로 저장됩니다.
 
 
 
 #### Arguments
 
-##### `config_main`: Main 모델(Pix2Pix) config 파일 경로
+`config_main`: Main 모델(Pix2Pix) config 파일 경로
 
-##### `config_post`: Postprocessing 모델(HINet) config 파일 경로
+`config_post`: Postprocessing 모델(HINet) config 파일 경로
 
-##### `checkpoint_main`: 학습한 main 모델(Pix2Pix)의 pth 파일 경로
+`checkpoint_main`: 학습한 main 모델(Pix2Pix)의 pth 파일 경로
 
-##### `checkpoint_post`: 학습한 postprocessing 모델(HINet)의 pth 파일 경로
+`checkpoint_post`: 학습한 postprocessing 모델(HINet)의 pth 파일 경로
 
-##### `image_dir`: 추론 시 사용될 데이터 디렉토리 경로
+`image_dir`: 추론 시 사용될 데이터 디렉토리 경로
 
-##### `patch_size`: 추론 시 사용될 이미지 patch의 크기
+`patch_size`: 추론 시 사용될 이미지 patch의 크기
 
-##### `stride`: 추론 시 사용될 stride의 크기
+`stride`: 추론 시 사용될 stride의 크기
 
-##### `batch_size`: 추론 시 사용될 batch의 크기
+`batch_size`: 추론 시 사용될 batch의 크기
 
-##### `output_dir`: 추론 결과를 저장할 디렉토리 경로. 해당 디렉토리 내 압축파일 형태로 결과물이 저장됩니다.
+`output_dir`: 추론 결과를 저장할 디렉토리 경로. 해당 디렉토리 내 압축파일 형태로 결과물이 저장됩니다.
 
