@@ -107,7 +107,7 @@ if __name__ == "__main__":
     elif args.train_type == 'hinet':
         args = Flags(args.hinet_phase1_args).get()
         if args.network.name != 'hinet':
-            raise ValueError("Network work name is not equal to 'hinet'. check configuration file.")
+            raise ValueError("Network work name is not equal to 'hinet'. heck configuration file.")
         train_module = getattr(
             import_module(f"train_modules.train_{args.network.name}"), "train"
             )
