@@ -47,6 +47,7 @@ def predict(args):
             img_paths, total=len(img_paths), position=0, leave=True, desc="[Inference]"
         )
         for img_path in pbar:
+            # cut image
             ds = CutImageDataset(
                 img_path, patch_size=patch_size, stride=stride, transforms=transforms
             )
@@ -59,6 +60,7 @@ def predict(args):
                 with autocast():
                     pred = main_model(images.to(device).float())
                     pred = (pred * 0.5) + 0.5
+                # Recover to origin size
                 for i in range(len(x1)):
                     preds[:, x1[i] : x2[i], y1[i] : y2[i]] += pred[i]
                     votes[:, x1[i] : x2[i], y1[i] : y2[i]] += 1
