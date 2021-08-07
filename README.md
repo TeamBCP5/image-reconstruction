@@ -1,16 +1,18 @@
 # 🌟카메라 이미지 품질 향상 AI 경진대회
 
-# 🌈Contents
+# Contents
 
-#### **[🧐Task Description](https://github.com/TeamBCP5/image-reconstruction#task-description-1)**
+### **[🧐Task Description](https://github.com/TeamBCP5/image-reconstruction#task-description-1)**
 
-#### **[⚙Installation](https://github.com/TeamBCP5/image-reconstruction#installation-1)**
+### **[⚙Installation](https://github.com/TeamBCP5/image-reconstruction#installation-1)**
 
-#### **[🕹Command Line Interface](https://github.com/TeamBCP5/image-reconstruction#command-line-interface-1)**
+### **[🕹Command Line Interface](https://github.com/TeamBCP5/image-reconstruction#command-line-interface-1)**
 
-- [Train](https://github.com/TeamBCP5/image-reconstruction#train)
-- [Inference](https://github.com/TeamBCP5/image-reconstruction#inference)
-- [Demo Augmentations](https://github.com/TeamBCP5/image-reconstruction#demo-augmentations)
+- #### [Train](https://github.com/TeamBCP5/image-reconstruction#train)
+
+- #### [Inference](https://github.com/TeamBCP5/image-reconstruction#inference)
+
+- #### [Demo Augmentations](https://github.com/TeamBCP5/image-reconstruction#demo-augmentations)
 
 #### 
 
