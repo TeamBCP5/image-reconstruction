@@ -8,9 +8,9 @@
 
 #### **[🕹Command Line Interface](https://github.com/TeamBCP5/image-reconstruction#command-line-interface)**
 
-- [Train]
-- [Inference]
-- [Demo Augmentations]
+- [Train](https://github.com/TeamBCP5/image-reconstruction#train)
+- [Inference](https://github.com/TeamBCP5/image-reconstruction#inference)
+- [Demo Augmentations]()
 
 #### 
 
@@ -210,7 +210,7 @@ $ python inference.py --checkpoint_main "./checkpoints/pix2pix/pix2pix.pth" --ch
 
 
 
-## Augmentations
+## Demo Augmentations
 
 모델 학습에 활용한 data augmentation의 예시 결과물을 생성합니다.
 
