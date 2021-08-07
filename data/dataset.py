@@ -168,6 +168,31 @@ class HINetDataset(Dataset):
 
 
 class CutImageDataset(Dataset):
+    """
+    input 이미지를 주어진 patch size로 자른 뒤, 좌표와 함께 반환
+    Process:
+        (1) 이미지로부터 patch size와 stride에 따라 x1, x2, y1, y2 좌표를 계산
+        (2) x1, x2, y1, y2에 따라 이미지를 자른 뒤, 좌표와 함께 반환
+
+    Args:
+        img_path (str):
+            - 자르고자 하는 이미지의 경로
+        label_path(str, optional):
+            - 자르고자 하는 라벨의 경로
+            - 추론 시, 계산하지 않음
+            - Defaults to None 
+        patch_size (int, optional):
+            - 반환받고자 하는 이미지의 크기
+            - Defaults to 512.
+        stride(int, optional):
+            - window가 움직이는 길이, 짧을 수록 많은 양의 패치 생성
+            - Defaults to 256
+        transforms(optional):
+            - 적용하고자 하는 Augmentation
+            - Defaults to None
+    Return:
+        (np.array), (tuple): 패치 크기의 이미지, 원래 이미지에서의 좌표
+    """
     def __init__(
         self,
         img_path: str,
@@ -196,7 +221,7 @@ class CutImageDataset(Dataset):
         )
         image = np.moveaxis(image, 0, -1)
 
-        # used when preprocessing data for train pix2pix
+        # pix2pix에 사용하기 위한 학습데이터 생성
         if self.label is not None:
             label = self.label.read(
                 [1, 2, 3], window=Window.from_slices((x1, x2), (y1, y2))
@@ -204,7 +229,7 @@ class CutImageDataset(Dataset):
             label = np.moveaxis(label, 0, -1)
             return image, label
 
-        # used for inference using pix2pix
+        # pix2pix에 사용될 추론 데이터 생성
         if self.transforms is not None:
             image = self.transforms(image=image)["image"]
 
@@ -213,6 +238,7 @@ class CutImageDataset(Dataset):
     @staticmethod
     def make_grid(shape, patch_size=512, stride=256):
         x, y = shape
+        # shape에 따른 패치 개수 계산
         nx = x // stride
         ny = y // stride
         slices = []
@@ -222,6 +248,7 @@ class CutImageDataset(Dataset):
             y1 = 0
             for _ in range(ny):
                 y2 = min(y1 + patch_size, y)
+                # 패치의 끝 점이 shape의 크기를 넘어갈 시 패치의 시작점 조절 
                 if x2 - x1 != patch_size:
                     x1 = x2 - patch_size
                 if y2 - y1 != patch_size:
