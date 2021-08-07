@@ -4,7 +4,6 @@ network:
     encoder_name: 'se_resnext50_32x4d'
     encoder_weights: 'imagenet'
     in_channels: 3
-    classes: 3
   discriminator:
     ndf: 64
     n_layers_D: 4

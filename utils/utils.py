@@ -17,7 +17,6 @@ def get_model(args, mode="train") -> nn.Module:
     if args.network.name == "pix2pix":
         if mode == "train":
             config_G = args.network.generator._asdict()  # encoder_name, ...
-            config_G.pop('classes')
             config_D = args.network.discriminator._asdict()  # ndf, ...
             G_model = Unet(**config_G)
             G_model.segmentation_head[2] = nn.Tanh()
