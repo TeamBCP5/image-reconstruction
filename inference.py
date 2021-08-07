@@ -138,8 +138,5 @@ if __name__ == "__main__":
     if not os.path.isfile(args.ckpt_post):
         raise ValueError(f"There's no checkpoint '{args.ckpt_post}'")
 
-    if not os.path.isdir(args.output_dir):
-        raise ValueError(f"There's no directory '{args.output_dir}'")
-        
     print_arguments(args)
     predict(args)

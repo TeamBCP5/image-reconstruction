@@ -152,7 +152,7 @@ class HINetLoss(nn.Module):
             + 5 * (1 - self.ms_ssim_loss_fn.ms_ssim(x[0], y))
             + 5 * (1 - self.ms_ssim_loss_fn.ms_ssim(x[1], y))
         )
-        return loss
+        return 2 * loss
 
 
 class GANLoss(nn.Module):
