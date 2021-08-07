@@ -2,13 +2,23 @@
 
 # Contents
 
+#### **[🧐Task Description](https://github.com/TeamBCP5/image-reconstruction#task-description)**
 
+#### **[⚙Installation](https://github.com/TeamBCP5/image-reconstruction#installation)**
+
+#### **[🕹Command Line Interface](https://github.com/TeamBCP5/image-reconstruction#command-line-interface)**
+
+- [Train]
+- [Inference]
+- [Demo Augmentations]
+
+#### 
 
 ---
 
 
 
-# Task Description
+# 🧐Task Description
 
 ## Subject
 
@@ -39,7 +49,7 @@
 
 
 
-# Installation
+# ⚙Installation
 
 ## Basic Settings
 
@@ -87,7 +97,7 @@ $ pip install -r requirements.txt
 
 
 
-# Command Line Interface
+# 🕹Command Line Interface
 
 ## Configurations
 
