@@ -101,7 +101,7 @@ $ pip install -r requirements.txt
 
 ## Configurations
 
-모델 학습과 추론은 기본적으로 [**모델별 Configuration 파일**](https://github.com/TeamBCP5/image-reconstruction/tree/main/configs)을 바탕으로 진행됩니다. 각 Configuration 파일에는 모델 구조와 학습 데이터셋 경로 등 학습과 추론을 위한 설정값이 기록되어 있습니다. 원활한 학습/추론을 위해 데이터셋 경로 등 설정값을 환경에 맞게 설정해주세요. Configuration 파일 명세는 [**이곳**](https://github.com/TeamBCP5/image-reconstruction/blob/main/Configurations.md)에서 확인하실 수 있습니다.
+모델 학습과 추론은 기본적으로 [**모델별 Configuration 파일**](https://github.com/TeamBCP5/image-reconstruction/tree/main/configs)을 바탕으로 진행됩니다. 각 Configuration 파일에는 모델 구조와 학습 데이터셋 경로 등 학습과 추론을 위한 설정값이 기록되어 있습니다. 원활한 학습/추론을 위해서는 데이터셋 경로 등 설정값을 환경에 맞게 설정해주셔야 합니다. Configuration 파일 명세는 [**이곳**](https://github.com/TeamBCP5/image-reconstruction/blob/main/Configurations.md)에서 확인하실 수 있습니다.
 
 
 
