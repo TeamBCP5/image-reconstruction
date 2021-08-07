@@ -4,7 +4,7 @@
 
 
 
-### network: 모델 구축에 대한 설정
+### network. 모델 구축에 대한 설정
 
 `name`: 모델명 설정 (`'pix2pix'`, `'hinet'`)
 
@@ -15,7 +15,7 @@
 
 
 
-### data: 학습 시 활용할 데이터셋에 대한 설정
+### data. 학습 시 활용할 데이터셋에 대한 설정
 
 `dir`: 학습 데이터 디렉토리 경로
 
@@ -43,7 +43,7 @@
 
 
 
-### optimizer: 학습에 활용할 optimizer 설정
+### optimizer. 학습에 활용할 optimizer 설정
 
 `name`: 학습에 활용할 optimizer 이름(Adam, AdamW, ...)
 
@@ -51,7 +51,7 @@
 
 
 
-### scheduler: 학습에 활용할 lr scheduler 설정
+### scheduler. 학습에 활용할 lr scheduler 설정
 
 `name`: 학습에 활용할 learning rate scheduler 이름(ReduceLROnPlateau, ...)
 
@@ -59,7 +59,7 @@
 
 
 
-### checkpoint: 불러올 모델의 경로와 학습 중 모델 저장 경로
+### checkpoint. 불러올 모델의 경로와 학습 중 모델 저장 경로
 
 `load_path`: 학습을 이어 진행할 경우 불러올 모델 pth 파일 경로
 
