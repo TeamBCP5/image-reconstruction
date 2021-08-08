@@ -102,7 +102,7 @@ $ pip install -r requirements.txt
 
 # 🕹Command Line Interface
 
-카메라 이미지 화질 개선 과정은 대략 다음 그림과 같습니다. Sliding Window를 기반으로 학습된 Pix2Pix 모델을 통해 1차적으로 빛번짐을 제거한 뒤, HINet 모델을 통해 화질을 보완합니다. 특히, 학습 단계에서 Pix2Pix Generator는 Discriminator와 함께 학습됩니다.
+카메라 이미지 화질 개선 과정은 대략 다음 그림과 같습니다. Sliding Window 기반의 Pix2Pix 모델을 통해 1차적으로 빛번짐을 제거한 뒤, HINet 모델을 통해 격자 무늬 등 손상된 화질을 보완합니다. 특히, 학습 단계에서 Pix2Pix Generator는 Discriminator와 함께 학습됩니다.
 
 ![](https://github.com/iloveslowfood/today-I-learned/blob/main/images/pipeline.png?raw=true)
 
