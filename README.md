@@ -67,9 +67,12 @@ $ pip install -r requirements.txt
 
 ```shell
 # Download: https://dacon.io/competitions/official/235746/data
-[dataset]/
+[camera_dataset]/
 ├── train_input_img/ # 학습 데이터 입력 이미지
 ├── train_label_img/
+├── hinet_dataset/ # postprocessing 데이터셋 디렉토리
+|     ├── train_input_img/
+|     └── train_label_img/
 └── test_input_img/
 ```
 
@@ -79,11 +82,12 @@ $ pip install -r requirements.txt
 
 ```shell
 [code]
-├── configs/ # directory of model configuration files
-├── data/ # modules associated with dataset
-├── networks/ # modules for model architectures
-├── train_modules/ # modules for train model
-├── utils/ # useful utilities
+├── camera_dataset/ # 데이터셋 디렉토리
+├── configs/ # 모델 config 파일 디렉토리
+├── data/ # data 처리 관련 모듈 디렉토리
+├── networks/ # 모델 아키텍처 관련 모듈 디렉토리
+├── train_modules/ # 모델 학습 관련 모듈 디렉토리
+├── utils/ # 유틸리티 관련 모듈 디렉토리
 ├── README.md
 ├── requirements.txt
 ├── demo_augmentations.py # for testing image augmentation
