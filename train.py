@@ -114,7 +114,7 @@ if __name__ == "__main__":
 
     # train hinet in single
     elif args.train_type == "hinet":
-        args = Flags(args.hinet_phase1_args).get()
+        args = Flags(args.config_hinet_phase1).get()
         if args.network.name != "hinet":
             raise ValueError(
                 "Network work name is not equal to 'hinet'. heck configuration file."
