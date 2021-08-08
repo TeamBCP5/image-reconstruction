@@ -10,7 +10,7 @@
 
 - [**Train**](https://github.com/TeamBCP5/image-reconstruction#train)  
 - [**Inference**](https://github.com/TeamBCP5/image-reconstruction#inference)  
-- [**Demo Augmentations**](https://github.com/TeamBCP5/image-reconstruction#demo-augmentation)  
+- [**Demo Augmentation**](https://github.com/TeamBCP5/image-reconstruction#demo-augmentation)  
 - [**Demo Preprocessing**](https://github.com/TeamBCP5/image-reconstruction#demo-preprocessing)  
 
 ---
