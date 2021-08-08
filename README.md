@@ -70,9 +70,9 @@ $ pip install -r requirements.txt
 [camera_dataset]/
 ├── train_input_img/ # 학습 데이터 입력 이미지
 ├── train_label_img/
-├── hinet_dataset/ # postprocessing 데이터셋 디렉토리
-|     ├── train_input_img/
-|     └── train_label_img/
+├── hinet_dataset/ # postprocessing 데이터셋 디렉토리 NOTE. 학습 과정 중 구축되는 디렉토리입니다.
+│     ├── train_input_img/
+│     └── train_label_img/
 └── test_input_img/
 ```
 
@@ -180,7 +180,7 @@ $ python train.py --train_type 'hinet'
 메인 모델(Pix2Pix)과 후처리 모델(HINet)을 불러와 추론을 수행합니다. 추론은 다음의 두 단계를 거쳐 진행됩니다.
 
 ```shell
-$ python inference.py --checkpoint_main "./checkpoints/pix2pix/pix2pix.pth" --checkpoint_post "./checkpoints/hinet/hinet.pth" --image_dir "/content/data/test_input_img"
+$ python inference.py --checkpoint_main "./best_models/pix2pix.pth" --checkpoint_post "./best_models/hinet.pth" --image_dir "./camera_dataset/test_input_img"
 ```
 
 #### I. 메인 모델(Pix2Pix) 추론
