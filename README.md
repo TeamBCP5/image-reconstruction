@@ -1,6 +1,6 @@
 # 🌟카메라 이미지 품질 향상 AI 경진대회
 
-## Contents
+# Contents
 
 #### **[🧐Task Description](https://github.com/TeamBCP5/image-reconstruction#task-description-1)**
 
