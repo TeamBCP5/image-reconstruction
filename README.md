@@ -216,15 +216,24 @@ $ python inference.py --checkpoint_main "./checkpoints/pix2pix/pix2pix.pth" --ch
 
 
 
-## Demo Augmentations
+## Demo Augmentation
 
 모델 학습에 활용한 data augmentation의 예시 결과물을 생성합니다.
 
 ```shell
-$ python demo_augmentation.py --data_dir "/content/data/" --num_samples 20 --save_dir './augmentation_demo/'
+$ python demo_augmentation.py --data_dir "./camera_dataset/" --num_samples 10 --save_dir './sample_augmentation/'
 ```
 
 
+
+### Outputs
+
+```shell
+[SAVE_DIR]
+├── original/ # 원본 이미지
+├── hinet/ # HINet을 위한 data augmentation 결과물
+└── pix2pix/ # pix2pix를 위한 data augmentation 결과물
+```
 
 #### Arguments
 
@@ -233,3 +242,36 @@ $ python demo_augmentation.py --data_dir "/content/data/" --num_samples 20 --sav
 `num_samples`: 생성할 샘플 수
 
 `save_dir`: Augmentation 적용 결과를 저장할 디렉토리 경로
+
+
+
+## Demo Preprocessing
+
+모델 학습에 활용한 data preprocessing의 예시 결과물을 생성합니다.
+
+```shell
+$ python demo_preprocessing.py --data_dir "./camera_dataset/" --num_samples 10 --save_dir './sample_preprocessing/'
+```
+
+
+
+#### Outputs
+
+```shell
+[SAVE_DIR]
+├── original/ # 원본 이미지
+├── hinet/ # HINet을 위한 data preprocessing 결과물
+└── pix2pix/ # pix2pix를 위한 data preprocessing 결과물
+```
+
+#### Arguments
+
+`data_dir`: input 데이터 디렉토리 경로
+
+`num_samples`: 생성할 샘플 수
+
+`save_dir`: Augmentation 적용 결과를 저장할 디렉토리 경로
+
+`stride`: Sliding Window 시 사용할 stride
+
+`patch_size`: Sliding Window 시 사용할 patch 사이즈
