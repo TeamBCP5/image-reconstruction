@@ -32,7 +32,7 @@ def get_model(args, mode="train") -> nn.Module:
 
     elif args.network.name == "hinet":
         model = HINet(depth=4)
-        init_net(model)
+        init_net(model, init_type='normal')
         return model
 
     else:
