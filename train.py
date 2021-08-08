@@ -70,7 +70,7 @@ if __name__ == "__main__":
         train_module = getattr(
             import_module(f"train_modules.train_{pix2pix_args.network.name}"), "train"
             )
-        print("<<< Train Pix2Pix >>>")
+        print("<<< All Train I. Train Pix2Pix >>>")
         print_arguments(pix2pix_args)
         train_module(pix2pix_args)
 
@@ -81,13 +81,13 @@ if __name__ == "__main__":
         # phase 1
             # input: origin input image
             # label: origin label image
-        print("<<< Train HINet - Phase 1 >>>")
+        print("<<< All Train II. Train HINet(Phase 1) >>>")
         print_arguments(hinet_phase1_args)
         train_module(hinet_phase1_args, phase=1)
         # phase 2
             # input: main model(pix2pix) output image
             # label: origin label image
-        print("<<< Train HINet - Phase 2 >>>")
+        print("<<< All Train III. Train HINet(Phase 2) >>>")
         print_arguments(hinet_phase2_args)
         train_module(hinet_phase2_args, phase=2) 
     
@@ -107,7 +107,7 @@ if __name__ == "__main__":
     elif args.train_type == 'hinet':
         args = Flags(args.hinet_phase1_args).get()
         if args.network.name != 'hinet':
-            raise ValueError("Network work name is not equal to 'hinet'. check configuration file.")
+            raise ValueError("Network work name is not equal to 'hinet'. heck configuration file.")
         train_module = getattr(
             import_module(f"train_modules.train_{args.network.name}"), "train"
             )

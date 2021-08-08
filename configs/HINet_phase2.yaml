@@ -11,8 +11,8 @@ seed: 41
 data:
   source: # postprocessing 데이터셋이 없을 경우 메인모델(pix2pix)를 불러와 추론을 진행하여 데이터셋을 구축
     config: './configs/Pix2Pix.yaml' # 메인모델 config 파일 경로
-    checkpoint: './checkpoints/pix2pix/pix2pix.pth' # 메인모델 파일 경로
-  dir: '/content/data/hinet_dataset' # '/content/data/train_input_img', '/content/data/train_label_img'
+    checkpoint: './checkpoints/pix2pix/ckpt_best_pix2pix.pth' # 메인모델 파일 경로
+  dir: './camera_dataset/hinet_dataset/' # './camera_dataset/hinet_dataset/train_input_img', './camera_dataset/hinet_dataset/train_label_img'
   meta: './configs/train_meta.csv'
   valid_type: 1 # 20 images similar to test images
   full_train: True
@@ -31,5 +31,5 @@ scheduler:
   verbose: True
 
 checkpoint:
-  load_path: ./checkpoints/hinet/ckpt_best_hinet_phase1.pth
-  save_dir: ./checkpoints/hinet/
+  load_path: './checkpoints/hinet/ckpt_best_hinet_phase1.pth'
+  save_dir: './checkpoints/hinet/'

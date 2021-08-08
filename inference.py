@@ -108,19 +108,19 @@ if __name__ == "__main__":
     parser.add_argument(
         "--checkpoint_main",
         dest="ckpt_main",
-        default="./checkpoints/pix2pix/pix2pix.pth",
+        default="./best_models/pix2pix.pth", # 초기값: 최종 결과물 제출에 활용한 pth 경로
         help="학습한 main 모델 경로",
     )
     parser.add_argument(
         "--checkpoint_post",
         dest="ckpt_post",
-        default="./checkpoints/hinet/hinet.pth",
+        default="./best_models/hinet.pth", # 초기값: 최종 결과물 제출에 활용한 pth 경로
         help="학습한 postprocessing 모델 경로",
     )
     parser.add_argument(
         "--image_dir",
         dest="img_dir",
-        default="/content/data/test_input_img",
+        default="./camera_dataset/test_input_img",
         help="추론 시 활용할 데이터 경로",
     )
     parser.add_argument("--patch_size", default=512, type=int, help="추론 시 사용될 윈도우의 크기")
@@ -138,8 +138,5 @@ if __name__ == "__main__":
     if not os.path.isfile(args.ckpt_post):
         raise ValueError(f"There's no checkpoint '{args.ckpt_post}'")
 
-    if not os.path.isdir(args.output_dir):
-        raise ValueError(f"There's no directory '{args.output_dir}'")
-        
     print_arguments(args)
     predict(args)

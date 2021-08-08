@@ -41,6 +41,7 @@ def train_valid_split(
     print(
         "[+] Train/Valid Type Desctription\n",
         f"Type: {valid_type}\n",
+        f"Full Train: {full_train}\n",
         VALIDTYPE_DESC[f"valid_type{valid_type}"],
     )
     meta = pd.read_csv(meta_path)

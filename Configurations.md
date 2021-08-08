@@ -15,8 +15,7 @@
 `name`: 모델명 설정 (`'pix2pix'`, `'hinet'`)
 
 - 이외 argument는 각 아키텍쳐의 arguments에 맞게 설정
-
-- [Pix2Pix network arguments](https://github.com/TeamBCP5/image-reconstruction/blob/b3b2c3e0fe5e57215894897fa13ffd17866d2fa3/configs/Pix2Pix.yaml#L1) 
+- [Pix2Pix network arguments](https://github.com/TeamBCP5/image-reconstruction/blob/b3b2c3e0fe5e57215894897fa13ffd17866d2fa3/configs/Pix2Pix.yaml#L1)
 - [HINet network arguments](https://github.com/TeamBCP5/image-reconstruction/blob/b3b2c3e0fe5e57215894897fa13ffd17866d2fa3/configs/HINet_phase1.yaml#L1)
 
 

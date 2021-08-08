@@ -15,7 +15,7 @@ num_workers: 0
 seed: 41
 
 data:
-  dir: '/content/data' 
+  dir: './camera_dataset/' 
   meta: './configs/train_meta.csv' 
   valid_type: 1 
   full_train: True 
@@ -38,5 +38,5 @@ scheduler:
 
 checkpoint:
   load_path: None
-  save_dir: ./checkpoints/pix2pix/
+  save_dir: './checkpoints/pix2pix/'
 
