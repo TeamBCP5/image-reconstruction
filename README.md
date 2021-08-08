@@ -90,7 +90,8 @@ $ pip install -r requirements.txt
 ├── utils/ # 유틸리티 관련 모듈 디렉토리
 ├── README.md
 ├── requirements.txt
-├── demo_augmentations.py # for testing image augmentation
+├── demo_augmentations.py # Augmentation 테스트를 위한 스크립트 파일
+├── demo_preprocessing.py # Preprocessing 테스트를 위한 스크립트 파일
 ├── train.py
 └── inference.py
 ```
