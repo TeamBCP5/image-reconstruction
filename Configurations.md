@@ -63,8 +63,8 @@
 
 `lr`: 학습에 활용할 initial learning rate
 
-- [Pix2Pix default optimizer](https://github.com/TeamBCP5/image-reconstruction/blob/f7ac48c8b8d8d1f28c24c8b08f00adce97033f15/configs/Pix2Pix.yaml#L26)
-- [HINet default optimizer](https://github.com/TeamBCP5/image-reconstruction/blob/f7ac48c8b8d8d1f28c24c8b08f00adce97033f15/configs/HINet_phase1.yaml#L20)
+- [Pix2Pix default optimizer arguments](https://github.com/TeamBCP5/image-reconstruction/blob/f7ac48c8b8d8d1f28c24c8b08f00adce97033f15/configs/Pix2Pix.yaml#L26)
+- [HINet default optimizer arguments](https://github.com/TeamBCP5/image-reconstruction/blob/f7ac48c8b8d8d1f28c24c8b08f00adce97033f15/configs/HINet_phase1.yaml#L20)
 
 
 
@@ -92,6 +92,6 @@
 
 `save_dir`: 학습 중 모델을 저장할 디렉토리 경로
 
-- [Pix2Pix default checkpoint](https://github.com/TeamBCP5/image-reconstruction/blob/f7ac48c8b8d8d1f28c24c8b08f00adce97033f15/configs/Pix2Pix.yaml#L39)
-- [HINet Phase 1 default checkpoint](https://github.com/TeamBCP5/image-reconstruction/blob/f7ac48c8b8d8d1f28c24c8b08f00adce97033f15/configs/HINet_phase1.yaml#L33)
-- [HINet Phase 2 default checkpoint](https://github.com/TeamBCP5/image-reconstruction/blob/f7ac48c8b8d8d1f28c24c8b08f00adce97033f15/configs/HINet_phase2.yaml#L33)
+- [Pix2Pix default checkpoint arguments](https://github.com/TeamBCP5/image-reconstruction/blob/f7ac48c8b8d8d1f28c24c8b08f00adce97033f15/configs/Pix2Pix.yaml#L39)
+- [HINet Phase 1 default checkpoint arguments](https://github.com/TeamBCP5/image-reconstruction/blob/f7ac48c8b8d8d1f28c24c8b08f00adce97033f15/configs/HINet_phase1.yaml#L33)
+- [HINet Phase 2 default checkpoint arguments](https://github.com/TeamBCP5/image-reconstruction/blob/f7ac48c8b8d8d1f28c24c8b08f00adce97033f15/configs/HINet_phase2.yaml#L33)
