@@ -3,8 +3,8 @@
 모델 학습과 추론은 기본적으로 [모델별 Configuration 파일](https://github.com/TeamBCP5/image-reconstruction/tree/main/configs)을 바탕으로 진행됩니다. 각 Configuration 파일에는 모델 구조와 학습 데이터셋 경로 등 학습과 추론을 위한 설정값이 기록되어 있습니다. 원활한 학습/추론을 위해 데이터셋 경로 등 설정값을 환경에 맞게 설정해주세요. 모델별 configuration 파일은 다음에서 확인하실 수 있으며, 주요 설정값은 아래와 같습니다.
 
 - [Pix2Pix Configurations](https://github.com/TeamBCP5/image-reconstruction/blob/main/configs/Pix2Pix.yaml)
-- [HINet Configurations - Phase 1](https://github.com/TeamBCP5/image-reconstruction/blob/main/configs/HINet_phase1.yaml)
-- [HINet Configurations - Phase 2](https://github.com/TeamBCP5/image-reconstruction/blob/main/configs/HINet_phase2.yaml)
+- [HINet Phase 1 Configurations](https://github.com/TeamBCP5/image-reconstruction/blob/main/configs/HINet_phase1.yaml)
+- [HINet Phase 2 Configurations](https://github.com/TeamBCP5/image-reconstruction/blob/main/configs/HINet_phase2.yaml)
 
 ---
 
@@ -15,9 +15,9 @@
 `name`: 모델명 설정 (`'pix2pix'`, `'hinet'`)
 
 - 이외 argument는 각 아키텍쳐의 arguments에 맞게 설정
-- [Pix2Pix network arguments](https://github.com/TeamBCP5/image-reconstruction/blob/b3b2c3e0fe5e57215894897fa13ffd17866d2fa3/configs/Pix2Pix.yaml#L1)
+- [Pix2Pix default network arguments](https://github.com/TeamBCP5/image-reconstruction/blob/b3b2c3e0fe5e57215894897fa13ffd17866d2fa3/configs/Pix2Pix.yaml#L1)
 
-- [HINet network arguments](https://github.com/TeamBCP5/image-reconstruction/blob/b3b2c3e0fe5e57215894897fa13ffd17866d2fa3/configs/HINet_phase1.yaml#L1)
+- [HINet default network arguments](https://github.com/TeamBCP5/image-reconstruction/blob/b3b2c3e0fe5e57215894897fa13ffd17866d2fa3/configs/HINet_phase1.yaml#L1)
 
 
 
@@ -45,7 +45,7 @@
 
 `source (for HINet)`: HINet 모델 학습을 위한 데이터셋이 갖춰져 있지 않을 경우 메인모델(pix2pix)를 불러와 추론을 수행, 데이터를 구축하기 위한 설정
 
-- 후처리 데이터셋?
+- 후처리 데이터셋
   - ***Input***. 대회에서 주어진 학습 데이터의 input 이미지에 대한 I에서 학습한 메인 모델(Pix2Pix)의 추론 결과
   - ***Label***. 대회에서 주어진 학습 데이터의 label 이미지
 - `config`: 후처리 데이터셋 구축에 활용할 메인모델(Pix2Pix)의 config 파일 경로
@@ -63,6 +63,9 @@
 
 `lr`: 학습에 활용할 initial learning rate
 
+- [Pix2Pix default optimizer](https://github.com/TeamBCP5/image-reconstruction/blob/f7ac48c8b8d8d1f28c24c8b08f00adce97033f15/configs/Pix2Pix.yaml#L26)
+- [HINet default optimizer](https://github.com/TeamBCP5/image-reconstruction/blob/f7ac48c8b8d8d1f28c24c8b08f00adce97033f15/configs/HINet_phase1.yaml#L20)
+
 
 
 ---
@@ -74,6 +77,8 @@
 `name`: 학습에 활용할 learning rate scheduler 이름(ReduceLROnPlateau, ...)
 
 - 이외 argument는 설정한 learning rate scheduler의 arguments에 맞게 설정
+- [Pix2Pix default scheduler](https://github.com/TeamBCP5/image-reconstruction/blob/f7ac48c8b8d8d1f28c24c8b08f00adce97033f15/configs/Pix2Pix.yaml#L30)
+- [HINet default scheduler](https://github.com/TeamBCP5/image-reconstruction/blob/f7ac48c8b8d8d1f28c24c8b08f00adce97033f15/configs/HINet_phase1.yaml#L24)
 
 
 
@@ -86,3 +91,7 @@
 `load_path`: 학습을 이어 진행할 경우 불러올 모델 pth 파일 경로
 
 `save_dir`: 학습 중 모델을 저장할 디렉토리 경로
+
+- [Pix2Pix default checkpoint](https://github.com/TeamBCP5/image-reconstruction/blob/f7ac48c8b8d8d1f28c24c8b08f00adce97033f15/configs/Pix2Pix.yaml#L39)
+- [HINet Phase 1 default checkpoint](https://github.com/TeamBCP5/image-reconstruction/blob/f7ac48c8b8d8d1f28c24c8b08f00adce97033f15/configs/HINet_phase1.yaml#L33)
+- [HINet Phase 2 default checkpoint](https://github.com/TeamBCP5/image-reconstruction/blob/f7ac48c8b8d8d1f28c24c8b08f00adce97033f15/configs/HINet_phase2.yaml#L33)
