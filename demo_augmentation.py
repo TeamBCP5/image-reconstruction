@@ -61,7 +61,7 @@ def demo_augmentation_hinet(probs: list):
                 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument("--data_dir", type=str, default="/content/data/", help="이미지 데이터 경로")
+    parser.add_argument("--data_dir", type=str, default="./camera_dataset/", help="이미지 데이터 경로")
     parser.add_argument("--num_samples", type=int, default=10, help="생성할 샘플 수")
     parser.add_argument("--save_dir", type=str, default='./sample_augmentation/', help='Augmentation 적용 결과를 저장할 디렉토리 경로')
     args = parser.parse_args()

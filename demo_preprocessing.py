@@ -10,7 +10,7 @@ from utils import set_seed
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument("--data_dir", type=str, default="/content/data/", help="이미지 데이터 경로")
+    parser.add_argument("--data_dir", type=str, default="./camera_dataset/", help="이미지 데이터 경로")
     parser.add_argument("--num_samples", type=int, default=5, help="생성할 샘플 수")
     parser.add_argument("--save_dir", type=str, default='./sample_preprocessing/', help='Preprocessing 결과를 저장할 디렉토리 경로')
     parser.add_argument("--stride", type=int, default=256, help='Sliding Window 시 사용할 stride')

@@ -31,7 +31,7 @@ VALIDTYPE_DESC = {
 
 
 def train_valid_split(
-    data_dir: str = "/content/data",
+    data_dir: str = "./camera_dataset/",
     meta_path: str = "./configs/train_meta.csv",
     valid_type: int = 1,
     full_train: bool = True,
