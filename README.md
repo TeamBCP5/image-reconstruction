@@ -8,6 +8,7 @@
 
 #### **[🕹Command Line Interface](https://github.com/TeamBCP5/image-reconstruction#command-line-interface-1)**
 
+- [**Configurations**](https://github.com/TeamBCP5/image-reconstruction#configurations)  
 - [**Train**](https://github.com/TeamBCP5/image-reconstruction#train)  
 - [**Inference**](https://github.com/TeamBCP5/image-reconstruction#inference)  
 - [**Demo Augmentation**](https://github.com/TeamBCP5/image-reconstruction#demo-augmentation)  
