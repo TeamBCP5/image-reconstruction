@@ -77,8 +77,8 @@
 `name`: 학습에 활용할 learning rate scheduler 이름(ReduceLROnPlateau, ...)
 
 - 이외 argument는 설정한 learning rate scheduler의 arguments에 맞게 설정
-- [Pix2Pix default scheduler](https://github.com/TeamBCP5/image-reconstruction/blob/f7ac48c8b8d8d1f28c24c8b08f00adce97033f15/configs/Pix2Pix.yaml#L30)
-- [HINet default scheduler](https://github.com/TeamBCP5/image-reconstruction/blob/f7ac48c8b8d8d1f28c24c8b08f00adce97033f15/configs/HINet_phase1.yaml#L24)
+- [Pix2Pix default lr scheduler arguments](https://github.com/TeamBCP5/image-reconstruction/blob/f7ac48c8b8d8d1f28c24c8b08f00adce97033f15/configs/Pix2Pix.yaml#L30)
+- [HINet default lr scheduler arguments](https://github.com/TeamBCP5/image-reconstruction/blob/f7ac48c8b8d8d1f28c24c8b08f00adce97033f15/configs/HINet_phase1.yaml#L24)
 
 
 
