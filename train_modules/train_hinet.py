@@ -24,7 +24,7 @@ from data import (
 )
 
 
-def train(args, phase: int=1):
+def train(args, phase: int = 1):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print_system_envs()
     set_seed(args.seed)
@@ -75,7 +75,9 @@ def train(args, phase: int=1):
 
     # load model
     start_epoch = 0
-    if phase == 1 and args.checkpoint.load_path is not None: # input: original input / label: original label
+    if (
+        phase == 1 and args.checkpoint.load_path is not None
+    ):  # input: original input / label: original label
         ckpt = torch.load(args.checkpoint.load_path)
         try:
             start_epoch = ckpt["epoch"] + 1
@@ -90,18 +92,24 @@ def train(args, phase: int=1):
         except:
             model.load_state_dict(ckpt)
 
-    elif phase == 2 and args.checkpoint.load_path is not None: # input: pix2pix input / label: original label
+    elif (
+        phase == 2 and args.checkpoint.load_path is not None
+    ):  # input: pix2pix input / label: original label
         ckpt = torch.load(args.checkpoint.load_path)
         try:
-            start_epoch = ckpt["epoch"] + 1 if 'phase1' not in args.checkpoint.load_path else start_epoch
+            start_epoch = (
+                ckpt["epoch"] + 1
+                if "phase1" not in args.checkpoint.load_path
+                else start_epoch
+            )
             model.load_state_dict(ckpt["model"])
             optimizer.load_state_dict(ckpt["optimizer"])
             scheduler.load_state_dict(ckpt["scheduler"])
-            if 'phase1' in args.checkpoint.load_path:
+            if "phase1" in args.checkpoint.load_path:
                 print(
                     f"[+] Checkpoint\n",
                     f"'{args.checkpoint.load_path}' loaded\n",
-                    )
+                )
             else:
                 print(
                     f"[+] Checkpoint\n",

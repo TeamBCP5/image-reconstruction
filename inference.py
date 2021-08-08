@@ -108,13 +108,13 @@ if __name__ == "__main__":
     parser.add_argument(
         "--checkpoint_main",
         dest="ckpt_main",
-        default="./best_models/pix2pix.pth", # 초기값: 최종 결과물 제출에 활용한 pth 경로
+        default="./best_models/pix2pix.pth",  # 초기값: 최종 결과물 제출에 활용한 pth 경로
         help="학습한 main 모델 경로",
     )
     parser.add_argument(
         "--checkpoint_post",
         dest="ckpt_post",
-        default="./best_models/hinet.pth", # 초기값: 최종 결과물 제출에 활용한 pth 경로
+        default="./best_models/hinet.pth",  # 초기값: 최종 결과물 제출에 활용한 pth 경로
         help="학습한 postprocessing 모델 경로",
     )
     parser.add_argument(

@@ -11,7 +11,7 @@ from data import (
     get_train_transform,
     get_valid_transform,
     Pix2PixDataset,
-    CutImageDataset
+    CutImageDataset,
 )
 from utils import (
     get_optimizer,
@@ -26,7 +26,9 @@ from networks import set_requires_grad
 
 
 def train(args):
-    print(f"<< Train Pix2Pix >>\n",)
+    print(
+        f"<< Train Pix2Pix >>\n",
+    )
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print_system_envs()
     set_seed(args.seed)
@@ -195,12 +197,13 @@ def train(args):
                 f"Checkpoint saved: '{ckpt_save_path}'\n",
             )
 
+
 def validation(
     model,
     img_paths: list,
     label_paths: list,
-    patch_size: int=512,
-    stride: int=256,
+    patch_size: int = 512,
+    stride: int = 256,
     transforms=None,
     device=None,
 ):
@@ -212,14 +215,16 @@ def validation(
         for img_path, lbl_path in tqdm(
             zip(img_paths, label_paths), desc="[Validation]"
         ):
-            ds = CutImageDataset(img_path, patch_size=patch_size, stride=stride, transforms=transforms)
+            ds = CutImageDataset(
+                img_path, patch_size=patch_size, stride=stride, transforms=transforms
+            )
             dl = DataLoader(ds, batch_size=batch_size, shuffle=False, drop_last=False)
 
             # main light scattering reduction(pix2pix)
             preds = torch.zeros(3, ds.shape[0], ds.shape[1]).to(device)
             votes = torch.zeros(3, ds.shape[0], ds.shape[1]).to(device)
             for images, (x1, x2, y1, y2) in dl:
-                pred = model(images.to(device).float()) # [C, W, H]
+                pred = model(images.to(device).float())  # [C, W, H]
                 pred = pred * 127.5 + 127.5
                 for i in range(len(x1)):
                     preds[:, x1[i] : x2[i], y1[i] : y2[i]] += pred[i]

@@ -9,18 +9,19 @@ from torch import nn
 from torch.nn import init
 import torch.nn.functional as F
 from torch.utils import model_zoo
-__all__ = ['se_resnext50_32x4d']
+
+__all__ = ["se_resnext50_32x4d"]
 
 pretrained_settings = {
-    'se_resnext50_32x4d': {
-        'imagenet': {
-            'url': 'http://data.lip6.fr/cadene/pretrainedmodels/se_resnext50_32x4d-a260b3a4.pth',
-            'input_space': 'RGB',
-            'input_size': [3, 224, 224],
-            'input_range': [0, 1],
-            'mean': [0.485, 0.456, 0.406],
-            'std': [0.229, 0.224, 0.225],
-            'num_classes': 1000
+    "se_resnext50_32x4d": {
+        "imagenet": {
+            "url": "http://data.lip6.fr/cadene/pretrainedmodels/se_resnext50_32x4d-a260b3a4.pth",
+            "input_space": "RGB",
+            "input_size": [3, 224, 224],
+            "input_range": [0, 1],
+            "mean": [0.485, 0.456, 0.406],
+            "std": [0.229, 0.224, 0.225],
+            "num_classes": 1000,
         }
     },
 }
@@ -162,15 +163,16 @@ def get_norm_layer(norm_type="batch"):
         raise NotImplementedError("normalization layer [%s] is not found" % norm_type)
     return norm_layer
 
+
 class Conv2dReLU(nn.Sequential):
     def __init__(
-            self,
-            in_channels,
-            out_channels,
-            kernel_size,
-            padding=0,
-            stride=1,
-            use_batchnorm=True,
+        self,
+        in_channels,
+        out_channels,
+        kernel_size,
+        padding=0,
+        stride=1,
+        use_batchnorm=True,
     ):
         conv = nn.Conv2d(
             in_channels,
@@ -207,7 +209,6 @@ class SCSEModule(nn.Module):
 
 
 class ArgMax(nn.Module):
-
     def __init__(self, dim=None):
         super().__init__()
         self.dim = dim
@@ -217,44 +218,46 @@ class ArgMax(nn.Module):
 
 
 class Activation(nn.Module):
-
     def __init__(self, name, **params):
 
         super().__init__()
 
-        if name is None or name == 'identity':
+        if name is None or name == "identity":
             self.activation = nn.Identity(**params)
-        elif name == 'sigmoid':
+        elif name == "sigmoid":
             self.activation = nn.Sigmoid()
-        elif name == 'softmax2d':
+        elif name == "softmax2d":
             self.activation = nn.Softmax(dim=1, **params)
-        elif name == 'softmax':
+        elif name == "softmax":
             self.activation = nn.Softmax(**params)
-        elif name == 'logsoftmax':
+        elif name == "logsoftmax":
             self.activation = nn.LogSoftmax(**params)
-        elif name == 'tanh':
+        elif name == "tanh":
             self.activation = nn.Tanh()
-        elif name == 'argmax':
+        elif name == "argmax":
             self.activation = ArgMax(**params)
-        elif name == 'argmax2d':
+        elif name == "argmax2d":
             self.activation = ArgMax(dim=1, **params)
         elif callable(name):
             self.activation = name(**params)
         else:
-            raise ValueError('Activation should be callable/sigmoid/softmax/logsoftmax/tanh/None; got {}'.format(name))
+            raise ValueError(
+                "Activation should be callable/sigmoid/softmax/logsoftmax/tanh/None; got {}".format(
+                    name
+                )
+            )
 
     def forward(self, x):
         return self.activation(x)
 
 
 class Attention(nn.Module):
-
     def __init__(self, name, **params):
         super().__init__()
 
         if name is None:
             self.attention = nn.Identity(**params)
-        elif name == 'scse':
+        elif name == "scse":
             self.attention = SCSEModule(**params)
         else:
             raise ValueError("Attention {} is not implemented".format(name))
@@ -267,14 +270,15 @@ class Flatten(nn.Module):
     def forward(self, x):
         return x.view(x.shape[0], -1)
 
+
 class DecoderBlock(nn.Module):
     def __init__(
-            self,
-            in_channels,
-            skip_channels,
-            out_channels,
-            use_batchnorm=True,
-            attention_type=None,
+        self,
+        in_channels,
+        skip_channels,
+        out_channels,
+        use_batchnorm=True,
+        attention_type=None,
     ):
         super().__init__()
         self.conv1 = Conv2dReLU(
@@ -284,7 +288,9 @@ class DecoderBlock(nn.Module):
             padding=1,
             use_batchnorm=use_batchnorm,
         )
-        self.attention1 = Attention(attention_type, in_channels=in_channels + skip_channels)
+        self.attention1 = Attention(
+            attention_type, in_channels=in_channels + skip_channels
+        )
         self.conv2 = Conv2dReLU(
             out_channels,
             out_channels,
@@ -326,13 +332,13 @@ class CenterBlock(nn.Sequential):
 
 class UnetDecoder(nn.Module):
     def __init__(
-            self,
-            encoder_channels,
-            decoder_channels,
-            n_blocks=5,
-            use_batchnorm=True,
-            attention_type=None,
-            center=False,
+        self,
+        encoder_channels,
+        decoder_channels,
+        n_blocks=5,
+        use_batchnorm=True,
+        attention_type=None,
+        center=False,
     ):
         super().__init__()
 
@@ -342,8 +348,12 @@ class UnetDecoder(nn.Module):
                     n_blocks, len(decoder_channels)
                 )
             )
-        encoder_channels = encoder_channels[1:]  # remove first skip with same spatial resolution
-        encoder_channels = encoder_channels[::-1]  # reverse channels to start from head of encoder
+        encoder_channels = encoder_channels[
+            1:
+        ]  # remove first skip with same spatial resolution
+        encoder_channels = encoder_channels[
+            ::-1
+        ]  # reverse channels to start from head of encoder
 
         # computing blocks input and output channels
         head_channels = encoder_channels[0]
@@ -368,7 +378,7 @@ class UnetDecoder(nn.Module):
 
     def forward(self, *features):
 
-        features = features[1:]    # remove first skip with same spatial resolution
+        features = features[1:]  # remove first skip with same spatial resolution
         features = features[::-1]  # reverse channels to start from head of encoder
 
         head = features[0]
@@ -415,20 +425,17 @@ def get_encoder(name, in_channels=3, depth=5, weights=None, output_stride=32, **
     encoder.set_in_channels(in_channels, pretrained=weights is not None)
     if output_stride != 32:
         encoder.make_dilated(output_stride)
-    
+
     return encoder
 
 
 class SEModule(nn.Module):
-
     def __init__(self, channels, reduction):
         super(SEModule, self).__init__()
         self.avg_pool = nn.AdaptiveAvgPool2d(1)
-        self.fc1 = nn.Conv2d(channels, channels // reduction, kernel_size=1,
-                             padding=0)
+        self.fc1 = nn.Conv2d(channels, channels // reduction, kernel_size=1, padding=0)
         self.relu = nn.ReLU(inplace=True)
-        self.fc2 = nn.Conv2d(channels // reduction, channels, kernel_size=1,
-                             padding=0)
+        self.fc2 = nn.Conv2d(channels // reduction, channels, kernel_size=1, padding=0)
         self.sigmoid = nn.Sigmoid()
 
     def forward(self, x):
@@ -445,6 +452,7 @@ class Bottleneck(nn.Module):
     """
     Base class for bottlenecks that implements `forward()` method.
     """
+
     def forward(self, x):
         residual = x
 
@@ -472,19 +480,24 @@ class SEBottleneck(Bottleneck):
     """
     Bottleneck for SENet154.
     """
+
     expansion = 4
 
-    def __init__(self, inplanes, planes, groups, reduction, stride=1,
-                 downsample=None):
+    def __init__(self, inplanes, planes, groups, reduction, stride=1, downsample=None):
         super(SEBottleneck, self).__init__()
         self.conv1 = nn.Conv2d(inplanes, planes * 2, kernel_size=1, bias=False)
         self.bn1 = nn.BatchNorm2d(planes * 2)
-        self.conv2 = nn.Conv2d(planes * 2, planes * 4, kernel_size=3,
-                               stride=stride, padding=1, groups=groups,
-                               bias=False)
+        self.conv2 = nn.Conv2d(
+            planes * 2,
+            planes * 4,
+            kernel_size=3,
+            stride=stride,
+            padding=1,
+            groups=groups,
+            bias=False,
+        )
         self.bn2 = nn.BatchNorm2d(planes * 4)
-        self.conv3 = nn.Conv2d(planes * 4, planes * 4, kernel_size=1,
-                               bias=False)
+        self.conv3 = nn.Conv2d(planes * 4, planes * 4, kernel_size=1, bias=False)
         self.bn3 = nn.BatchNorm2d(planes * 4)
         self.relu = nn.ReLU(inplace=True)
         self.se_module = SEModule(planes * 4, reduction=reduction)
@@ -498,16 +511,18 @@ class SEResNetBottleneck(Bottleneck):
     implementation and uses `stride=stride` in `conv1` and not in `conv2`
     (the latter is used in the torchvision implementation of ResNet).
     """
+
     expansion = 4
 
-    def __init__(self, inplanes, planes, groups, reduction, stride=1,
-                 downsample=None):
+    def __init__(self, inplanes, planes, groups, reduction, stride=1, downsample=None):
         super(SEResNetBottleneck, self).__init__()
-        self.conv1 = nn.Conv2d(inplanes, planes, kernel_size=1, bias=False,
-                               stride=stride)
+        self.conv1 = nn.Conv2d(
+            inplanes, planes, kernel_size=1, bias=False, stride=stride
+        )
         self.bn1 = nn.BatchNorm2d(planes)
-        self.conv2 = nn.Conv2d(planes, planes, kernel_size=3, padding=1,
-                               groups=groups, bias=False)
+        self.conv2 = nn.Conv2d(
+            planes, planes, kernel_size=3, padding=1, groups=groups, bias=False
+        )
         self.bn2 = nn.BatchNorm2d(planes)
         self.conv3 = nn.Conv2d(planes, planes * 4, kernel_size=1, bias=False)
         self.bn3 = nn.BatchNorm2d(planes * 4)
@@ -521,17 +536,32 @@ class SEResNeXtBottleneck(Bottleneck):
     """
     ResNeXt bottleneck type C with a Squeeze-and-Excitation module.
     """
+
     expansion = 4
 
-    def __init__(self, inplanes, planes, groups, reduction, stride=1,
-                 downsample=None, base_width=4):
+    def __init__(
+        self,
+        inplanes,
+        planes,
+        groups,
+        reduction,
+        stride=1,
+        downsample=None,
+        base_width=4,
+    ):
         super(SEResNeXtBottleneck, self).__init__()
         width = math.floor(planes * (base_width / 64)) * groups
-        self.conv1 = nn.Conv2d(inplanes, width, kernel_size=1, bias=False,
-                               stride=1)
+        self.conv1 = nn.Conv2d(inplanes, width, kernel_size=1, bias=False, stride=1)
         self.bn1 = nn.BatchNorm2d(width)
-        self.conv2 = nn.Conv2d(width, width, kernel_size=3, stride=stride,
-                               padding=1, groups=groups, bias=False)
+        self.conv2 = nn.Conv2d(
+            width,
+            width,
+            kernel_size=3,
+            stride=stride,
+            padding=1,
+            groups=groups,
+            bias=False,
+        )
         self.bn2 = nn.BatchNorm2d(width)
         self.conv3 = nn.Conv2d(width, planes * 4, kernel_size=1, bias=False)
         self.bn3 = nn.BatchNorm2d(planes * 4)
@@ -542,10 +572,19 @@ class SEResNeXtBottleneck(Bottleneck):
 
 
 class SENet(nn.Module):
-
-    def __init__(self, block, layers, groups, reduction, dropout_p=0.2,
-                 inplanes=128, input_3x3=True, downsample_kernel_size=3,
-                 downsample_padding=1, num_classes=1000):
+    def __init__(
+        self,
+        block,
+        layers,
+        groups,
+        reduction,
+        dropout_p=0.2,
+        inplanes=128,
+        input_3x3=True,
+        downsample_kernel_size=3,
+        downsample_padding=1,
+        num_classes=1000,
+    ):
         """
         Parameters
         ----------
@@ -593,30 +632,30 @@ class SENet(nn.Module):
         self.inplanes = inplanes
         if input_3x3:
             layer0_modules = [
-                ('conv1', nn.Conv2d(3, 64, 3, stride=2, padding=1,
-                                    bias=False)),
-                ('bn1', nn.BatchNorm2d(64)),
-                ('relu1', nn.ReLU(inplace=True)),
-                ('conv2', nn.Conv2d(64, 64, 3, stride=1, padding=1,
-                                    bias=False)),
-                ('bn2', nn.BatchNorm2d(64)),
-                ('relu2', nn.ReLU(inplace=True)),
-                ('conv3', nn.Conv2d(64, inplanes, 3, stride=1, padding=1,
-                                    bias=False)),
-                ('bn3', nn.BatchNorm2d(inplanes)),
-                ('relu3', nn.ReLU(inplace=True)),
+                ("conv1", nn.Conv2d(3, 64, 3, stride=2, padding=1, bias=False)),
+                ("bn1", nn.BatchNorm2d(64)),
+                ("relu1", nn.ReLU(inplace=True)),
+                ("conv2", nn.Conv2d(64, 64, 3, stride=1, padding=1, bias=False)),
+                ("bn2", nn.BatchNorm2d(64)),
+                ("relu2", nn.ReLU(inplace=True)),
+                ("conv3", nn.Conv2d(64, inplanes, 3, stride=1, padding=1, bias=False)),
+                ("bn3", nn.BatchNorm2d(inplanes)),
+                ("relu3", nn.ReLU(inplace=True)),
             ]
         else:
             layer0_modules = [
-                ('conv1', nn.Conv2d(3, inplanes, kernel_size=7, stride=2,
-                                    padding=3, bias=False)),
-                ('bn1', nn.BatchNorm2d(inplanes)),
-                ('relu1', nn.ReLU(inplace=True)),
+                (
+                    "conv1",
+                    nn.Conv2d(
+                        3, inplanes, kernel_size=7, stride=2, padding=3, bias=False
+                    ),
+                ),
+                ("bn1", nn.BatchNorm2d(inplanes)),
+                ("relu1", nn.ReLU(inplace=True)),
             ]
         # To preserve compatibility with Caffe weights `ceil_mode=True`
         # is used instead of `padding=1`.
-        layer0_modules.append(('pool', nn.MaxPool2d(3, stride=2,
-                                                    ceil_mode=True)))
+        layer0_modules.append(("pool", nn.MaxPool2d(3, stride=2, ceil_mode=True)))
         self.layer0 = nn.Sequential(OrderedDict(layer0_modules))
         self.layer1 = self._make_layer(
             block,
@@ -625,7 +664,7 @@ class SENet(nn.Module):
             groups=groups,
             reduction=reduction,
             downsample_kernel_size=1,
-            downsample_padding=0
+            downsample_padding=0,
         )
         self.layer2 = self._make_layer(
             block,
@@ -635,7 +674,7 @@ class SENet(nn.Module):
             groups=groups,
             reduction=reduction,
             downsample_kernel_size=downsample_kernel_size,
-            downsample_padding=downsample_padding
+            downsample_padding=downsample_padding,
         )
         self.layer3 = self._make_layer(
             block,
@@ -645,7 +684,7 @@ class SENet(nn.Module):
             groups=groups,
             reduction=reduction,
             downsample_kernel_size=downsample_kernel_size,
-            downsample_padding=downsample_padding
+            downsample_padding=downsample_padding,
         )
         self.layer4 = self._make_layer(
             block,
@@ -655,26 +694,41 @@ class SENet(nn.Module):
             groups=groups,
             reduction=reduction,
             downsample_kernel_size=downsample_kernel_size,
-            downsample_padding=downsample_padding
+            downsample_padding=downsample_padding,
         )
         self.avg_pool = nn.AvgPool2d(7, stride=1)
         self.dropout = nn.Dropout(dropout_p) if dropout_p is not None else None
         self.last_linear = nn.Linear(512 * block.expansion, num_classes)
 
-    def _make_layer(self, block, planes, blocks, groups, reduction, stride=1,
-                    downsample_kernel_size=1, downsample_padding=0):
+    def _make_layer(
+        self,
+        block,
+        planes,
+        blocks,
+        groups,
+        reduction,
+        stride=1,
+        downsample_kernel_size=1,
+        downsample_padding=0,
+    ):
         downsample = None
         if stride != 1 or self.inplanes != planes * block.expansion:
             downsample = nn.Sequential(
-                nn.Conv2d(self.inplanes, planes * block.expansion,
-                          kernel_size=downsample_kernel_size, stride=stride,
-                          padding=downsample_padding, bias=False),
+                nn.Conv2d(
+                    self.inplanes,
+                    planes * block.expansion,
+                    kernel_size=downsample_kernel_size,
+                    stride=stride,
+                    padding=downsample_padding,
+                    bias=False,
+                ),
                 nn.BatchNorm2d(planes * block.expansion),
             )
 
         layers = []
-        layers.append(block(self.inplanes, planes, groups, reduction, stride,
-                            downsample))
+        layers.append(
+            block(self.inplanes, planes, groups, reduction, stride, downsample)
+        )
         self.inplanes = planes * block.expansion
         for i in range(1, blocks):
             layers.append(block(self.inplanes, planes, groups, reduction))
@@ -704,25 +758,37 @@ class SENet(nn.Module):
 
 
 def initialize_pretrained_model(model, num_classes, settings):
-    assert num_classes == settings['num_classes'], \
-        'num_classes should be {}, but is {}'.format(
-            settings['num_classes'], num_classes)
-    model.load_state_dict(model_zoo.load_url(settings['url']))
-    model.input_space = settings['input_space']
-    model.input_size = settings['input_size']
-    model.input_range = settings['input_range']
-    model.mean = settings['mean']
-    model.std = settings['std']
+    assert (
+        num_classes == settings["num_classes"]
+    ), "num_classes should be {}, but is {}".format(
+        settings["num_classes"], num_classes
+    )
+    model.load_state_dict(model_zoo.load_url(settings["url"]))
+    model.input_space = settings["input_space"]
+    model.input_size = settings["input_size"]
+    model.input_range = settings["input_range"]
+    model.mean = settings["mean"]
+    model.std = settings["std"]
 
-def se_resnext50_32x4d(num_classes=1000, pretrained='imagenet'):
-    model = SENet(SEResNeXtBottleneck, [3, 4, 6, 3], groups=32, reduction=16,
-                  dropout_p=None, inplanes=64, input_3x3=False,
-                  downsample_kernel_size=1, downsample_padding=0,
-                  num_classes=num_classes)
+
+def se_resnext50_32x4d(num_classes=1000, pretrained="imagenet"):
+    model = SENet(
+        SEResNeXtBottleneck,
+        [3, 4, 6, 3],
+        groups=32,
+        reduction=16,
+        dropout_p=None,
+        inplanes=64,
+        input_3x3=False,
+        downsample_kernel_size=1,
+        downsample_padding=0,
+        num_classes=num_classes,
+    )
     if pretrained is not None:
-        settings = pretrained_settings['se_resnext50_32x4d'][pretrained]
+        settings = pretrained_settings["se_resnext50_32x4d"][pretrained]
         initialize_pretrained_model(model, num_classes, settings)
     return model
+
 
 def patch_first_conv(model, new_in_channels, default_in_channels=3, pretrained=True):
     """Change first convolution layer input channels.
@@ -735,10 +801,10 @@ def patch_first_conv(model, new_in_channels, default_in_channels=3, pretrained=T
     for module in model.modules():
         if isinstance(module, nn.Conv2d) and module.in_channels == default_in_channels:
             break
-    
+
     weight = module.weight.detach()
     module.in_channels = new_in_channels
-    
+
     if not pretrained:
         module.weight = nn.parameter.Parameter(
             torch.Tensor(
@@ -748,16 +814,14 @@ def patch_first_conv(model, new_in_channels, default_in_channels=3, pretrained=T
             )
         )
         module.reset_parameters()
-    
+
     elif new_in_channels == 1:
         new_weight = weight.sum(1, keepdim=True)
         module.weight = nn.parameter.Parameter(new_weight)
-    
+
     else:
         new_weight = torch.Tensor(
-            module.out_channels,
-            new_in_channels // module.groups,
-            *module.kernel_size
+            module.out_channels, new_in_channels // module.groups, *module.kernel_size
         )
 
         for i in range(new_in_channels):
@@ -780,10 +844,11 @@ def replace_strides_with_dilation(module, dilation_rate):
             if hasattr(mod, "static_padding"):
                 mod.static_padding = nn.Identity()
 
+
 class EncoderMixin:
     """Add encoder functionality such as:
-        - output channels specification of feature tensors (produced by encoder)
-        - patching first convolution for arbitrary input channels
+    - output channels specification of feature tensors (produced by encoder)
+    - patching first convolution for arbitrary input channels
     """
 
     @property
@@ -800,7 +865,9 @@ class EncoderMixin:
         if self._out_channels[0] == 3:
             self._out_channels = tuple([in_channels] + list(self._out_channels)[1:])
 
-        utils.patch_first_conv(model=self, new_in_channels=in_channels, pretrained=pretrained)
+        utils.patch_first_conv(
+            model=self, new_in_channels=in_channels, pretrained=pretrained
+        )
 
     def get_stages(self):
         """Method should be overridden in encoder"""
@@ -809,22 +876,29 @@ class EncoderMixin:
     def make_dilated(self, output_stride):
 
         if output_stride == 16:
-            stage_list=[5,]
-            dilation_list=[2,]
-            
+            stage_list = [
+                5,
+            ]
+            dilation_list = [
+                2,
+            ]
+
         elif output_stride == 8:
-            stage_list=[4, 5]
-            dilation_list=[2, 4] 
+            stage_list = [4, 5]
+            dilation_list = [2, 4]
 
         else:
-            raise ValueError("Output stride should be 16 or 8, got {}.".format(output_stride))
-        
+            raise ValueError(
+                "Output stride should be 16 or 8, got {}.".format(output_stride)
+            )
+
         stages = self.get_stages()
         for stage_indx, dilation_rate in zip(stage_list, dilation_list):
             utils.replace_strides_with_dilation(
                 module=stages[stage_indx],
                 dilation_rate=dilation_rate,
             )
+
 
 class SENetEncoder(SENet, EncoderMixin):
     def __init__(self, out_channels, depth=5, **kwargs):
@@ -862,12 +936,22 @@ class SENetEncoder(SENet, EncoderMixin):
         state_dict.pop("last_linear.weight", None)
         super().load_state_dict(state_dict, **kwargs)
 
+
 class SegmentationHead(nn.Sequential):
-    def __init__(self, in_channels, out_channels, kernel_size=3, activation=None, upsampling=1):
-        conv2d = nn.Conv2d(in_channels, out_channels, kernel_size=kernel_size, padding=kernel_size // 2)
-        upsampling = nn.UpsamplingBilinear2d(scale_factor=upsampling) if upsampling > 1 else nn.Identity()
+    def __init__(
+        self, in_channels, out_channels, kernel_size=3, activation=None, upsampling=1
+    ):
+        conv2d = nn.Conv2d(
+            in_channels, out_channels, kernel_size=kernel_size, padding=kernel_size // 2
+        )
+        upsampling = (
+            nn.UpsamplingBilinear2d(scale_factor=upsampling)
+            if upsampling > 1
+            else nn.Identity()
+        )
         activation = Activation(activation)
         super().__init__(conv2d, upsampling, activation)
+
 
 class Unet(nn.Module):
     def __init__(
@@ -912,7 +996,7 @@ class Unet(nn.Module):
     def initialize(self):
         self.initialize_decoder(self.decoder)
         self.initialize_head(self.segmentation_head)
-    
+
     def initialize_decoder(self, module):
         for m in module.modules():
             if isinstance(m, nn.Conv2d):

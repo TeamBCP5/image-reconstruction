@@ -18,7 +18,7 @@ if __name__ == "__main__":
              - Phase 2. Input: Main 모델(Pix2Pix) output, Label: 주어진 데이터 label
          - 'pix2pix': Pix2Pix 모델 개별 학습
          - 'hinet': HINet 모델 개별 학습
-        """
+        """,
     )
     parser.add_argument(
         "--config_pix2pix",
@@ -39,78 +39,89 @@ if __name__ == "__main__":
         help="HINet 모델(phase2) configuration 파일 경로",
     )
     args = parser.parse_args()
-    
+
     # exception
     if args.train_type not in ["pix2pix", "hinet", "all"]:
         raise ValueError("Choose 'train_type' one of 'all', 'pix2pix', 'hinet'")
 
     if not os.path.isfile(args.config_pix2pix):
         raise ValueError(f"There's no file '{args.config_pix2pix}'")
-    
+
     if not os.path.isfile(args.config_hinet_phase1):
         raise ValueError(f"There's no file '{args.config_hinet_phase1}'")
 
     if not os.path.isfile(args.config_hinet_phase2):
         raise ValueError(f"There's no file '{args.config_hinet_phase2}'")
 
-    # train        
-    if args.train_type == 'all': # train all necessary models
+    # train
+    if args.train_type == "all":  # train all necessary models
         pix2pix_args = Flags(args.config_pix2pix).get()
         hinet_phase1_args = Flags(args.config_hinet_phase1).get()
         hinet_phase2_args = Flags(args.config_hinet_phase2).get()
 
-        if pix2pix_args.network.name != 'pix2pix':
-            raise ValueError("Network work name is not equal to 'pix2pix'. check configuration file.")
-        if hinet_phase1_args.network.name != 'hinet':
-            raise ValueError("Network work name is not equal to 'hinet'. check configuration file.")
-        if hinet_phase2_args.network.name != 'hinet':
-            raise ValueError("Network work name is not equal to 'hinet'. check configuration file.")
+        if pix2pix_args.network.name != "pix2pix":
+            raise ValueError(
+                "Network work name is not equal to 'pix2pix'. check configuration file."
+            )
+        if hinet_phase1_args.network.name != "hinet":
+            raise ValueError(
+                "Network work name is not equal to 'hinet'. check configuration file."
+            )
+        if hinet_phase2_args.network.name != "hinet":
+            raise ValueError(
+                "Network work name is not equal to 'hinet'. check configuration file."
+            )
 
         # train Pix2Pix
         train_module = getattr(
             import_module(f"train_modules.train_{pix2pix_args.network.name}"), "train"
-            )
+        )
         print("<<< All Train I. Train Pix2Pix >>>")
         print_arguments(pix2pix_args)
         train_module(pix2pix_args)
 
         # train HINet
         train_module = getattr(
-            import_module(f"train_modules.train_{hinet_phase1_args.network.name}"), "train"
-            )
+            import_module(f"train_modules.train_{hinet_phase1_args.network.name}"),
+            "train",
+        )
         # phase 1
-            # input: origin input image
-            # label: origin label image
+        # input: origin input image
+        # label: origin label image
         print("<<< All Train II. Train HINet(Phase 1) >>>")
         print_arguments(hinet_phase1_args)
         train_module(hinet_phase1_args, phase=1)
         # phase 2
-            # input: main model(pix2pix) output image
-            # label: origin label image
+        # input: main model(pix2pix) output image
+        # label: origin label image
         print("<<< All Train III. Train HINet(Phase 2) >>>")
         print_arguments(hinet_phase2_args)
-        train_module(hinet_phase2_args, phase=2) 
-    
+        train_module(hinet_phase2_args, phase=2)
+
     # train pix2pix in single
-    elif args.train_type == 'pix2pix':
+    elif args.train_type == "pix2pix":
         args = Flags(args.config_pix2pix).get()
-        if args.network.name != 'pix2pix':
-            raise ValueError("Network work name is not equal to 'pix2pix'. Check configuration file.")
+        if args.network.name != "pix2pix":
+            raise ValueError(
+                "Network work name is not equal to 'pix2pix'. Check configuration file."
+            )
         train_module = getattr(
             import_module(f"train_modules.train_{args.network.name}"), "train"
-            )
+        )
         print("<<< Train Pix2Pix in Single >>>")
         print_arguments(args)
         train_module(args)
-    
+
     # train hinet in single
-    elif args.train_type == 'hinet':
+    elif args.train_type == "hinet":
         args = Flags(args.hinet_phase1_args).get()
-        if args.network.name != 'hinet':
-            raise ValueError("Network work name is not equal to 'hinet'. heck configuration file.")
+        if args.network.name != "hinet":
+            raise ValueError(
+                "Network work name is not equal to 'hinet'. heck configuration file."
+            )
         train_module = getattr(
             import_module(f"train_modules.train_{args.network.name}"), "train"
-            )
+        )
         print("<<< Train HINet in Single >>>")
         print_arguments(args)
         train_module(args, phase=1)

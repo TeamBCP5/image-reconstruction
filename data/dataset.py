@@ -150,7 +150,7 @@ class HINetDataset(Dataset):
             return image, label
 
         elif self.mode == "valid":
-            
+
             image = self.transforms(image=image)["image"]
             image = image / 255.0
 
@@ -181,7 +181,7 @@ class CutImageDataset(Dataset):
         label_path(str, optional):
             - 자르고자 하는 라벨의 경로
             - 추론 시, 계산하지 않음
-            - Defaults to None 
+            - Defaults to None
         patch_size (int, optional):
             - 반환받고자 하는 이미지의 크기
             - Defaults to 512.
@@ -194,6 +194,7 @@ class CutImageDataset(Dataset):
     Return:
         (np.array), (tuple): 패치 크기의 이미지, 원래 이미지에서의 좌표
     """
+
     def __init__(
         self,
         img_path: str,
@@ -249,7 +250,7 @@ class CutImageDataset(Dataset):
             y1 = 0
             for _ in range(ny):
                 y2 = min(y1 + patch_size, y)
-                # 패치의 끝 점이 shape의 크기를 넘어갈 시 패치의 시작점 조절 
+                # 패치의 끝 점이 shape의 크기를 넘어갈 시 패치의 시작점 조절
                 if x2 - x1 != patch_size:
                     x1 = x2 - patch_size
                 if y2 - y1 != patch_size:
@@ -259,6 +260,7 @@ class CutImageDataset(Dataset):
             x1 += stride
         slices = np.array(slices)
         return slices.reshape(-1, 4)
+
 
 def compose_postprocessing_dataset(args, device):
     input_save_dir = os.path.join(args.data.dir, "train_input_img")
@@ -271,12 +273,15 @@ def compose_postprocessing_dataset(args, device):
     ):
         if len(os.listdir(input_save_dir)) < 622:
             import warnings
-            warnings.warn(f"""
+
+            warnings.warn(
+                f"""
             The size of dataset is lower than 622, the original number of given train data.
             It's because you might stop process composing postprocessing dataset process.
             Train will be progressed without error, but if you want to train postprocessor with full dataset,
             remove all data in '{input_save_dir}' and '{label_save_dir}'
-            """)
+            """
+            )
         return
 
     print(
@@ -313,7 +318,9 @@ def compose_postprocessing_dataset(args, device):
         for img_path, lbl_path in tqdm(
             zip(train_input_paths, train_label_paths), desc="[Compose Dataset]"
         ):
-            ds = CutImageDataset(img_path, patch_size=patch_size, stride=stride, transforms=transforms)
+            ds = CutImageDataset(
+                img_path, patch_size=patch_size, stride=stride, transforms=transforms
+            )
             dl = DataLoader(ds, batch_size=batch_size, shuffle=False, drop_last=False)
             # main light scattering reduction(pix2pix)
             preds = torch.zeros(3, ds.shape[0], ds.shape[1]).to(device)
