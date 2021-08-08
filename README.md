@@ -2,11 +2,11 @@
 
 # Contents
 
-#### **[🧐Task Description](https://github.com/TeamBCP5/image-reconstruction#task-description-1)**
+#### **[🧐 Task Description](https://github.com/TeamBCP5/image-reconstruction#task-description-1)**
 
-#### **[⚙Installation](https://github.com/TeamBCP5/image-reconstruction#installation-1)**
+#### **[⚙ Installation](https://github.com/TeamBCP5/image-reconstruction#installation-1)**
 
-#### **[🕹Command Line Interface](https://github.com/TeamBCP5/image-reconstruction#command-line-interface-1)**
+#### **[🕹 Command Line Interface](https://github.com/TeamBCP5/image-reconstruction#command-line-interface-1)**
 
 - [**Configurations**](https://github.com/TeamBCP5/image-reconstruction#configurations)  
 - [**Train**](https://github.com/TeamBCP5/image-reconstruction#train)  
