@@ -93,7 +93,7 @@ if __name__ == "__main__":
 
     # transform 할당
     aug_pix2pix = demo_augmentation_pix2pix("pix2pix")
-    aug_hinet = demo_augmentation_hinet("pix2pix")
+    aug_hinet = demo_augmentation_hinet("hinet")
 
     for input_path in tqdm(train_input_paths, desc="[Sample Augmentation]"):
         img_name = os.path.basename(input_path).split(".png")[0]
