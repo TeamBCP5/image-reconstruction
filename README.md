@@ -233,7 +233,7 @@ $ python demo_augmentation.py --data_dir "./camera_dataset/" --num_samples 10 --
 
 
 
-#### Outputs
+### Outputs
 
 ```shell
 [SAVE_DIR]
@@ -242,7 +242,7 @@ $ python demo_augmentation.py --data_dir "./camera_dataset/" --num_samples 10 --
 └── pix2pix/ # pix2pix를 위한 data augmentation 결과물
 ```
 
-#### Arguments
+### Arguments
 
 `data_dir`: input 데이터 디렉토리 경로
 
@@ -262,7 +262,7 @@ $ python demo_preprocessing.py --data_dir "./camera_dataset/" --num_samples 10 -
 
 
 
-#### Outputs
+### Outputs
 
 ```shell
 [SAVE_DIR]
@@ -271,7 +271,7 @@ $ python demo_preprocessing.py --data_dir "./camera_dataset/" --num_samples 10 -
 └── pix2pix/ # pix2pix를 위한 data preprocessing 결과물
 ```
 
-#### Arguments
+### Arguments
 
 `data_dir`: input 데이터 디렉토리 경로
 
