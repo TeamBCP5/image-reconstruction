@@ -51,7 +51,7 @@
 
 # ⚙Installation
 
-## Basic Settings
+## Preparation
 
 ```shell
 # clone repository
